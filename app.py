@@ -73,7 +73,7 @@ elif menu == "Aylık Takvim":
     pivot = sonuc.pivot(index="Tarih",columns="Grup",values="Eczane")
     pivot = pivot.fillna("")
     
-    def highlight_cells(val):
+def highlight_cells(val):
     if val == "":
         return "background-color: #eeeeee"
     else:
