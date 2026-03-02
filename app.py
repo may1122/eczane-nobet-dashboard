@@ -4,6 +4,43 @@ import plotly.express as px
 
 st.set_page_config(page_title="Eczane Nöbet Takip Sistemi", layout="wide")
 
+st.markdown("""
+<style>
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.card {
+    background: linear-gradient(135deg, #5f72ff, #9b23ea);
+    padding: 30px;
+    border-radius: 20px;
+    color: white;
+    width: 220px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.eczane {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.grup {
+    font-size: 18px;
+    margin-top: 10px;
+    opacity: 0.9;
+}
+</style>
+""", unsafe_allow_html=True)
+
 @st.cache_data
 def load_excel(file):
     xls = pd.ExcelFile(file)
@@ -86,42 +123,6 @@ elif menu == "Tarih Seç":
 
         st.success(f"{secilen_tarih} tarihindeki nöbetçiler")
 
-        st.markdown("""
-        <style>
-        .card-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .card {
-            background: linear-gradient(135deg, #5f72ff, #9b23ea);
-            padding: 30px;
-            border-radius: 20px;
-            color: white;
-            width: 220px;
-            text-align: center;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .eczane {
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .grup {
-            font-size: 18px;
-            margin-top: 10px;
-            opacity: 0.9;
-        }
-        </style>
-        """, unsafe_allow_html=True)
 
         html = '<div class="card-container">'
 
@@ -177,10 +178,7 @@ elif menu == "Grup Analizi":
 
     st.bar_chart(sonuc["Eczane"].value_counts())
 
-elif menu == "Grup Analizi":
-    grup = st.selectbox("Grup", sorted(df["Grup"].unique()))
-    sonuc = df[df["Grup"]==grup]
-    st.bar_chart(sonuc["Eczane"].value_counts())
+
 
 elif menu == "Eczane Analizi":
     eczane = st.selectbox("Eczane", sorted(df["Eczane"].unique()))
