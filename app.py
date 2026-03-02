@@ -71,7 +71,15 @@ elif menu == "Aylık Takvim":
     ay = st.selectbox("Ay", sorted(df["Ay"].unique()))
     sonuc = df[df["Ay"]==ay]
     pivot = sonuc.pivot(index="Tarih",columns="Grup",values="Eczane")
-    st.dataframe(pivot, use_container_width=True)
+    def highlight_cells(val):
+    if val == "":
+        return "background-color: #eeeeee"
+    else:
+        return "background-color: #d4edda"
+
+styled = pivot.style.applymap(highlight_cells)
+
+st.dataframe(styled, use_container_width=True)
 
 elif menu == "Grup Analizi":
     grup = st.selectbox("Grup", sorted(df["Grup"].unique()))
