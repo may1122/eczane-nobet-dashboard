@@ -63,7 +63,15 @@ if menu == "Genel Özet":
     )
 
     st.plotly_chart(fig, use_container_width=True)
-    
+
+if df["Tarih"].dtype != "datetime64[ns]":
+    df["Tarih"] = pd.to_datetime(
+        df["Tarih"],
+        dayfirst=True,
+        errors="coerce"
+    )
+
+
 elif menu == "Tarih Seç":
 
     st.title("Tarih Seçerek Nöbetçi Bul")
