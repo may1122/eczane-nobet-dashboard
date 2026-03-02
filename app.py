@@ -29,6 +29,13 @@ if not file:
     st.stop()
 
 df = load_excel(file)
+df["Tarih"] = pd.to_datetime(
+    df["Tarih"],
+    dayfirst=True,
+    errors="coerce"
+).dt.normalize()
+
+df = df.dropna(subset=["Tarih"])
 
 menu = st.sidebar.radio("Menü",[
     "Genel Özet",
@@ -63,9 +70,72 @@ if menu == "Genel Özet":
     st.plotly_chart(fig, use_container_width=True)
     
 elif menu == "Tarih Seç":
-    tarih = st.selectbox("Tarih", sorted(df["Tarih"].unique()))
-    sonuc = df[df["Tarih"]==tarih]
-    st.dataframe(sonuc)
+
+    st.title("📅 Tarih Seçerek Nöbetçi Bul")
+
+    secilen_tarih = st.date_input(
+        "Tarih Seçin",
+        value=df["Tarih"].min().date()
+    )
+
+    sonuc = df[df["Tarih"] == pd.to_datetime(secilen_tarih)]
+
+    if sonuc.empty:
+        st.warning("Bu tarihte nöbetçi bulunamadı.")
+    else:
+
+        st.success(f"{secilen_tarih} tarihindeki nöbetçiler")
+
+        st.markdown("""
+        <style>
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #5f72ff, #9b23ea);
+            padding: 30px;
+            border-radius: 20px;
+            color: white;
+            width: 220px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .eczane {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .grup {
+            font-size: 18px;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        html = '<div class="card-container">'
+
+        for _, row in sonuc.iterrows():
+            html += f"""
+            <div class="card">
+                <div class="eczane">{row['Eczane']}</div>
+                <div class="grup">Grup {row['Grup']}</div>
+            </div>
+            """
+
+        html += "</div>"
+
+        st.markdown(html, unsafe_allow_html=True)
 
 
 elif menu == "Aylık Takvim":
