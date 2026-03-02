@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from streamlit_calendar import calendar
+
 
 st.set_page_config(page_title="Eczane Nöbet Takip Sistemi", layout="wide")
 
@@ -63,9 +65,35 @@ if menu == "Genel Özet":
     st.plotly_chart(fig, use_container_width=True)
     
 elif menu == "Tarih Seç":
-    tarih = st.selectbox("Tarih", sorted(df["Tarih"].unique()))
-    sonuc = df[df["Tarih"]==tarih]
-    st.dataframe(sonuc)
+
+    st.title("Tarih Seçerek Nöbetçi Bul")
+
+    df["Tarih"] = pd.to_datetime(df["Tarih"])
+
+    # Takvim event formatı
+    events = []
+
+    for tarih in df["Tarih"].unique():
+        events.append({
+            "title": "Nöbet Var",
+            "start": tarih.strftime("%Y-%m-%d"),
+            "allDay": True
+        })
+
+    calendar_options = {
+        "initialView": "dayGridMonth",
+        "locale": "tr",
+        "height": 600,
+    }
+
+    selected = calendar(events=events, options=calendar_options)
+
+    if selected and "dateClick" in selected:
+        secilen_tarih = pd.to_datetime(selected["dateClick"]["date"])
+
+        sonuc = df[df["Tarih"] == secilen_tarih]
+
+        st.write(sonuc)
 
 
 elif menu == "Aylık Takvim":
