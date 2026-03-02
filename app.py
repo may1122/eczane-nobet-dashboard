@@ -39,25 +39,28 @@ menu = st.sidebar.radio("Menü",[
 ])
 
 if menu == "Genel Özet":
+
     col1,col2,col3,col4 = st.columns(4)
+
     col1.metric("Toplam Nöbet", len(df))
     col2.metric("Toplam Eczane", df["Eczane"].nunique())
     col3.metric("Toplam Ay", df["Ay"].nunique())
     col4.metric("Ortalama Nöbet", round(len(df)/df["Eczane"].nunique(),2))
-    st.subheader("Gün Dağılımı (Pasta Grafiği)")
 
-gun_sayim = df["Gün"].value_counts().reset_index()
-gun_sayim.columns = ["Gün", "Sayı"]
+    # Pasta grafik
+    st.subheader("Gün Dağılımı")
 
-fig = px.pie(
-    gun_sayim,
-    names="Gün",
-    values="Sayı",
-    title="Nöbetlerin Günlere Göre Dağılımı",
-    hole=0.3  # donut görünümü
-)
+    gun_sayim = df["Gün"].value_counts().reset_index()
+    gun_sayim.columns = ["Gün", "Sayı"]
 
-st.plotly_chart(fig, use_container_width=True)
+    fig = px.pie(
+        gun_sayim,
+        names="Gün",
+        values="Sayı",
+        hole=0.4
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 elif menu == "Tarih Seç":
     tarih = st.selectbox("Tarih", sorted(df["Tarih"].unique()))
