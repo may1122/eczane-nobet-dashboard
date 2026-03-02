@@ -67,8 +67,8 @@ elif menu == "Tarih Seç":
     st.title("Tarih Seçerek Nöbetçi Bul")
 
     secilen_tarih = st.date_input("Tarih Seçin")
-
-    sonuc = df[df["Tarih"] == pd.to_datetime(secilen_tarih)]
+    
+    sonuc = df[df["Tarih"].dt.date == secilen_tarih]
 
     if sonuc.empty:
         st.warning("Bu tarihte nöbetçi bulunamadı")
