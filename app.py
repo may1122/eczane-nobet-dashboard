@@ -61,23 +61,7 @@ if menu == "Genel Özet":
     )
 
     st.plotly_chart(fig, use_container_width=True)
- st.divider()
-    st.subheader("📋 Özet Tablo")
-
-    summary_df = load_summary(file)
-
-    if summary_df is not None:
-
-        summary_df = summary_df.reset_index(drop=True)
-
-        st.dataframe(
-            summary_df,
-            use_container_width=True,
-            height=500
-        )
-
-
-
+    
 elif menu == "Tarih Seç":
     tarih = st.selectbox("Tarih", sorted(df["Tarih"].unique()))
     sonuc = df[df["Tarih"]==tarih]
