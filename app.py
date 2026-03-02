@@ -107,10 +107,6 @@ elif menu == "Grup Analizi":
 
     st.bar_chart(sonuc["Eczane"].value_counts())
 
-elif menu == "Grup Analizi":
-    grup = st.selectbox("Grup", sorted(df["Grup"].unique()))
-    sonuc = df[df["Grup"]==grup]
-    st.bar_chart(sonuc["Eczane"].value_counts())
 
 elif menu == "Eczane Analizi":
     eczane = st.selectbox("Eczane", sorted(df["Eczane"].unique()))
