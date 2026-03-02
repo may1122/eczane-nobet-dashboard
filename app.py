@@ -61,71 +61,12 @@ if menu == "Genel Özet":
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
+    
 elif menu == "Tarih Seç":
+    tarih = st.selectbox("Tarih", sorted(df["Tarih"].unique()))
+    sonuc = df[df["Tarih"]==tarih]
+    st.dataframe(sonuc)
 
-    st.title("Tarih Seçerek Nöbetçi Bul")
-
-   df["Tarih"] = pd.to_datetime(df["Tarih"], errors="coerce").dt.normalize()
-   sonuc = df[df["Tarih"] == pd.to_datetime(secilen_tarih)]
-
-    if sonuc.empty:
-        st.warning("Bu tarihte nöbetçi bulunamadı")
-    else:
-
-        st.success(f"{secilen_tarih} tarihindeki nöbetçiler")
-
-        # CSS kart tasarımı
-        st.markdown("""
-        <style>
-        .card-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .card {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            padding: 25px;
-            border-radius: 15px;
-            color: white;
-            width: 200px;
-            text-align: center;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-            transition: 0.3s;
-        }
-
-        .card:hover {
-            transform: scale(1.05);
-        }
-
-        .eczane {
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .grup {
-            font-size: 18px;
-            opacity: 0.9;
-            margin-top: 10px;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-        # Kartları oluştur
-        html = '<div class="card-container">'
-
-        for _, row in sonuc.iterrows():
-            html += f"""
-            <div class="card">
-                <div class="eczane">{row['Eczane']}</div>
-                <div class="grup">Grup {row['Grup']}</div>
-            </div>
-            """
-
-        html += "</div>"
-
-        st.markdown(html, unsafe_allow_html=True)
 
 elif menu == "Aylık Takvim":
 
