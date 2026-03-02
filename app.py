@@ -68,20 +68,43 @@ elif menu == "Tarih Seç":
     st.dataframe(sonuc)
 
 elif menu == "Aylık Takvim":
-    ay = st.selectbox("Ay", sorted(df["Ay"].unique()))
-    sonuc = df[df["Ay"]==ay]
-    pivot = sonuc.pivot(index="Tarih",columns="Grup",values="Eczane")
+
+    ay = st.selectbox(
+        "Ay seç",
+        sorted(df["Ay"].unique())
+    )
+
+    sonuc = df[df["Ay"] == ay]
+
+    pivot = sonuc.pivot(
+        index="Tarih",
+        columns="Grup",
+        values="Eczane"
+    )
+
     pivot = pivot.fillna("")
-    
-def highlight_cells(val):
-    if val == "":
-        return "background-color: #eeeeee"
-    else:
-        return "background-color: #d4edda"
 
-styled = pivot.style.applymap(highlight_cells)
+    def highlight_cells(val):
+        if val == "":
+            return "background-color: #eeeeee"
+        else:
+            return "background-color: #d4edda"
 
-st.dataframe(styled, use_container_width=True)
+    styled = pivot.style.applymap(highlight_cells)
+
+    st.dataframe(styled, use_container_width=True)
+
+
+elif menu == "Grup Analizi":
+
+    grup = st.selectbox(
+        "Grup seç",
+        sorted(df["Grup"].unique())
+    )
+
+    sonuc = df[df["Grup"] == grup]
+
+    st.bar_chart(sonuc["Eczane"].value_counts())
 
 elif menu == "Grup Analizi":
     grup = st.selectbox("Grup", sorted(df["Grup"].unique()))
