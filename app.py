@@ -16,6 +16,9 @@ def load_excel(file):
 
         df = pd.read_excel(file, sheet_name=sheet)
 
+        # Unnamed sütunlarını kaldır
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+
         # GENEL sayfasını oku
         if "GENEL" in sheet.upper():
 
@@ -96,7 +99,6 @@ if menu == "Genel Özet":
 
     st.subheader("Özet Tablo")
 
-    # Gün dağılımı pivot
     gun_pivot = pd.pivot_table(
         df,
         index=["Eczane","Grup"],
@@ -111,15 +113,12 @@ if menu == "Genel Özet":
 
     gun_pivot = gun_pivot[["Eczane","Grup"] + mevcut_gunler]
 
-    # GENEL tablosu ile birleştir
     ozet = genel.merge(gun_pivot, on=["Eczane","Grup"], how="left")
 
-    # boş günleri 0 yap
     for g in gun_sira:
         if g in ozet.columns:
             ozet[g] = ozet[g].fillna(0)
 
-    # kolon sırası
     ozet = ozet[
         [
             "Eczane",
@@ -177,12 +176,43 @@ elif menu == "Aylık Takvim":
 # GRUP ANALİZİ
 elif menu == "Grup Analizi":
 
-    st.subheader("Grup Günlere Göre Nöbet Dağılımı")
+    st.subheader("Grup Görünümü")
 
     grup = st.selectbox(
         "Grup seç",
-        sorted(df["Grup"].unique())
+        sorted(genel["Grup"].unique())
     )
+
+    # Gün pivot oluştur
+    gun_pivot = pd.pivot_table(
+        df,
+        index=["Eczane","Grup"],
+        columns="Gün",
+        aggfunc="size",
+        fill_value=0
+    ).reset_index()
+
+    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
+
+    mevcut_gunler = [g for g in gun_sira if g in gun_pivot.columns]
+
+    gun_pivot = gun_pivot[["Eczane","Grup"] + mevcut_gunler]
+
+    ozet = genel.merge(gun_pivot, on=["Eczane","Grup"], how="left")
+
+    for g in gun_sira:
+        if g in ozet.columns:
+            ozet[g] = ozet[g].fillna(0)
+
+    grup_ozet = ozet[ozet["Grup"] == grup]
+
+    st.subheader(f"{grup} Eczaneleri")
+
+    st.dataframe(grup_ozet, use_container_width=True)
+
+    st.divider()
+
+    st.subheader("Grup Günlere Göre Nöbet Dağılımı")
 
     sonuc = df[df["Grup"] == grup]
 
@@ -192,8 +222,6 @@ elif menu == "Grup Analizi":
         .size()
         .reset_index(name="Nöbet Sayısı")
     )
-
-    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
 
     sayim["Gün"] = pd.Categorical(
         sayim["Gün"],
