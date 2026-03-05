@@ -1,178 +1,250 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from streamlit_calendar import calendar
 
-st.set_page_config(page_title="Eczane Nöbet Dashboard", layout="wide")
-
-st.title("💊 Eczane Nöbet Dashboard")
-
-# -------------------------------------------------
-# EXCEL OKUMA
-# -------------------------------------------------
+st.set_page_config(page_title="Eczane Nöbet Takip Sistemi", layout="wide")
 
 @st.cache_data
 def load_excel(file):
 
     xls = pd.ExcelFile(file)
 
-    df_list = []
+    all_data = []
     genel = None
 
     for sheet in xls.sheet_names:
 
-        df = pd.read_excel(xls, sheet_name=sheet)
+        df = pd.read_excel(file, sheet_name=sheet)
 
-        # unnamed sütun sil
-        df = df.loc[:, ~df.columns.astype(str).str.contains("Unnamed")]
+        # Unnamed sütunları kaldır
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
 
         # GENEL sayfası
-        if sheet.upper() == "GENEL":
-            genel = df
+        if "GENEL" in sheet.upper():
+
+            genel = df[[
+                "Eczane",
+                "Grup",
+                "Geçmiş Katsayı",
+                "Geçmiş Bayram",
+                "Toplam Nöbet",
+                "Toplam Katsayı",
+                "Bayram"
+            ]]
+
             continue
 
-        # boş satırları sil
-        df = df.dropna(how="all")
+        if "Tarih" not in df.columns:
+            continue
 
-        # Grup sütunu ekle
-        df["Grup"] = sheet
+        df["Tarih"] = pd.to_datetime(df["Tarih"], errors="coerce")
 
-        df_list.append(df)
+        df_long = df.melt(
+            id_vars=["Tarih", "Gün"],
+            var_name="Grup",
+            value_name="Eczane"
+        )
 
-    if len(df_list) == 0:
-        st.error("Excel sayfaları okunamadı.")
-        st.stop()
+        df_long = df_long.dropna(subset=["Eczane"])
 
-    df = pd.concat(df_list, ignore_index=True)
+        df_long["Ay"] = sheet
 
-    # ----------------------------------------------
-    # Tarih sütunlarını bul
-    # ----------------------------------------------
+        all_data.append(df_long)
 
-    tarih_sutunlari = []
+    df = pd.concat(all_data, ignore_index=True)
 
-    for col in df.columns:
-
-        try:
-            pd.to_datetime(col)
-            tarih_sutunlari.append(col)
-        except:
-            pass
-
-    if len(tarih_sutunlari) == 0:
-        st.error("Tarih sütunları bulunamadı.")
-        st.stop()
-
-    # ----------------------------------------------
-    # LONG FORMAT
-    # ----------------------------------------------
-
-    df_long = df.melt(
-        id_vars=["Grup"],
-        value_vars=tarih_sutunlari,
-        var_name="Tarih",
-        value_name="Eczane"
-    )
-
-    df_long["Tarih"] = pd.to_datetime(df_long["Tarih"], errors="coerce")
-
-    df_long = df_long.dropna(subset=["Tarih", "Eczane"])
-
-    return df_long, genel
+    return df, genel
 
 
-# -------------------------------------------------
-# DOSYA YÜKLE
-# -------------------------------------------------
+st.title("💊 Eczane Nöbet Takip Sistemi")
 
-file = st.file_uploader("Excel Dosyası Yükle", type=["xlsx"])
+file = st.file_uploader("Excel dosyasını yükleyin", type=["xlsx"])
 
-if file is None:
+if not file:
+    st.info("Başlamak için Excel dosyasını yükleyin.")
     st.stop()
 
 df, genel = load_excel(file)
 
-# -------------------------------------------------
-# ECZANE ARAMA
-# -------------------------------------------------
+menu = st.sidebar.radio("Menü", [
+    "Genel Özet",
+    "Tarih Seç",
+    "Aylık Takvim",
+    "Grup Analizi",
+    "Eczane Analizi"
+])
 
-st.sidebar.header("🔎 Filtre")
+gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
 
-eczane_arama = st.sidebar.text_input("Eczane Ara")
+# GENEL ÖZET
+if menu == "Genel Özet":
 
-if eczane_arama:
-    df = df[df["Eczane"].astype(str).str.contains(eczane_arama, case=False)]
+    col1, col2, col3, col4 = st.columns(4)
 
-# -------------------------------------------------
-# GENEL İSTATİSTİK
-# -------------------------------------------------
+    col1.metric("Toplam Nöbet", len(df))
+    col2.metric("Toplam Eczane", df["Eczane"].nunique())
+    col3.metric("Toplam Ay", df["Ay"].nunique())
+    col4.metric("Ortalama Nöbet", round(len(df) / df["Eczane"].nunique(), 2))
 
-st.subheader("📊 Eczane Nöbet Sayıları")
+    st.subheader("Gün Dağılımı")
 
-sayim = df["Eczane"].value_counts().reset_index()
-sayim.columns = ["Eczane", "Nöbet"]
+    gun_sayim = df["Gün"].value_counts().reset_index()
+    gun_sayim.columns = ["Gün", "Sayı"]
 
-fig = px.bar(sayim, x="Eczane", y="Nöbet")
-
-st.plotly_chart(fig, use_container_width=True)
-
-# -------------------------------------------------
-# GRUP ANALİZ
-# -------------------------------------------------
-
-st.subheader("👥 Grup Analizi")
-
-grup = df.groupby("Grup")["Eczane"].count().reset_index()
-
-fig2 = px.bar(grup, x="Grup", y="Eczane")
-
-st.plotly_chart(fig2, use_container_width=True)
-
-# -------------------------------------------------
-# TAKVİM
-# -------------------------------------------------
-
-st.subheader("📅 Nöbet Takvimi")
-
-events = []
-
-for _, row in df.iterrows():
-
-    events.append(
-        {
-            "title": str(row["Eczane"]),
-            "start": row["Tarih"].strftime("%Y-%m-%d")
-        }
+    fig = px.pie(
+        gun_sayim,
+        names="Gün",
+        values="Sayı",
+        hole=0.4
     )
 
-calendar_options = {
-    "initialView": "dayGridMonth"
-}
+    st.plotly_chart(fig, use_container_width=True)
 
-calendar(events=events, options=calendar_options)
+    st.divider()
 
-# -------------------------------------------------
-# TARİH FİLTRE
-# -------------------------------------------------
+    gun_pivot = pd.pivot_table(
+        df,
+        index=["Eczane","Grup"],
+        columns="Gün",
+        aggfunc="size",
+        fill_value=0
+    ).reset_index()
 
-st.subheader("📆 Tarihe Göre Nöbet")
+    mevcut_gunler = [g for g in gun_sira if g in gun_pivot.columns]
 
-tarih = st.date_input("Tarih Seç")
+    gun_pivot = gun_pivot[["Eczane","Grup"] + mevcut_gunler]
 
-sonuc = df[df["Tarih"] == pd.to_datetime(tarih)]
+    ozet = genel.merge(gun_pivot, on=["Eczane","Grup"], how="left")
 
-st.dataframe(sonuc)
+    ozet.fillna(0, inplace=True)
 
-# -------------------------------------------------
-# ECZANE DETAY
-# -------------------------------------------------
+    st.subheader("Özet Tablo")
 
-st.subheader("🏥 Eczane Detay")
+    st.dataframe(ozet, use_container_width=True)
 
-eczane = st.selectbox("Eczane Seç", sorted(df["Eczane"].unique()))
 
-eczane_df = df[df["Eczane"] == eczane]
+# TARİH SEÇ
+elif menu == "Tarih Seç":
 
-st.write("Toplam nöbet:", len(eczane_df))
+    tarih = st.selectbox(
+        "Tarih seç",
+        sorted(df["Tarih"].dropna().unique())
+    )
 
-st.dataframe(eczane_df)
+    sonuc = df[df["Tarih"] == tarih]
+
+    st.subheader(f"{tarih} nöbetçi eczaneler")
+
+    st.dataframe(
+        sonuc[["Tarih","Gün","Grup","Eczane"]],
+        use_container_width=True
+    )
+
+
+# AYLIK TAKVİM
+elif menu == "Aylık Takvim":
+
+    ay = st.selectbox(
+        "Ay seç",
+        sorted(df["Ay"].unique())
+    )
+
+    sonuc = df[df["Ay"] == ay]
+
+    pivot = sonuc.pivot(
+        index="Tarih",
+        columns="Grup",
+        values="Eczane"
+    )
+
+    pivot = pivot.fillna("")
+
+    def highlight(val):
+
+        if val == "":
+            return "background-color:#eeeeee"
+
+        return "background-color:#d4edda"
+
+    styled = pivot.style.map(highlight)
+
+    st.subheader(f"{ay} Takvim")
+
+    st.dataframe(styled, use_container_width=True)
+
+
+# GRUP ANALİZİ
+elif menu == "Grup Analizi":
+
+    grup = st.selectbox(
+        "Grup seç",
+        sorted(genel["Grup"].unique())
+    )
+
+    gun_pivot = pd.pivot_table(
+        df,
+        index=["Eczane","Grup"],
+        columns="Gün",
+        aggfunc="size",
+        fill_value=0
+    ).reset_index()
+
+    mevcut_gunler = [g for g in gun_sira if g in gun_pivot.columns]
+
+    gun_pivot = gun_pivot[["Eczane","Grup"] + mevcut_gunler]
+
+    ozet = genel.merge(gun_pivot, on=["Eczane","Grup"], how="left")
+
+    ozet.fillna(0, inplace=True)
+
+    grup_ozet = ozet[ozet["Grup"] == grup]
+
+    st.subheader(f"{grup} Eczaneleri")
+
+    st.dataframe(grup_ozet, use_container_width=True)
+
+    st.divider()
+
+    sonuc = df[df["Grup"] == grup]
+
+    sayim = (
+        sonuc
+        .groupby(["Gün","Eczane"])
+        .size()
+        .reset_index(name="Nöbet Sayısı")
+    )
+
+    sayim["Gün"] = pd.Categorical(
+        sayim["Gün"],
+        categories=gun_sira,
+        ordered=True
+    )
+
+    fig = px.bar(
+        sayim,
+        x="Gün",
+        y="Nöbet Sayısı",
+        color="Eczane",
+        barmode="group",
+        category_orders={"Gün": gun_sira}
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
+# ECZANE ANALİZİ
+elif menu == "Eczane Analizi":
+
+    eczane = st.selectbox(
+        "Eczane",
+        sorted(df["Eczane"].unique())
+    )
+
+    sonuc = df[df["Eczane"] == eczane]
+
+    st.metric("Toplam Nöbet", len(sonuc))
+
+    st.dataframe(
+        sonuc.sort_values("Tarih"),
+        use_container_width=True
+    )
