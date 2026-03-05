@@ -74,6 +74,13 @@ if menu == "Genel Özet":
         fill_value=0
     ).reset_index()
 
+    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
+
+    mevcut_gunler = [g for g in gun_sira if g in gun_pivot.columns]
+
+    gun_pivot = gun_pivot[["Eczane","Grup"] + mevcut_gunler]
+    
+
     # Toplam nöbet
     toplam_nobet = df.groupby("Eczane").size().reset_index(name="Toplam Nöbet")
 
