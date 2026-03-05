@@ -272,26 +272,64 @@ elif menu == "Eczane Analizi":
 
     st.subheader("💊 Eczane Analizi")
 
-    eczane = st.selectbox(
-        "Eczane seç",
-        sorted(df["Eczane"].unique())
-    )
+    col1,col2 = st.columns([4,1])
 
-    sonuc = df[df["Eczane"]==eczane]
+    with col1:
+        eczane = st.selectbox(
+            "Eczane seç",
+            sorted(df["Eczane"].unique())
+        )
 
-    st.metric("Toplam Nöbet",len(sonuc))
+    with col2:
+        ara = st.button("🔎 Ara")
 
-    fig = px.scatter(
-        sonuc,
-        x="Tarih",
-        y="Grup",
-        color="Gün",
-        title="Nöbet Zaman Çizelgesi"
-    )
+    if ara:
 
-    st.plotly_chart(fig,use_container_width=True)
+        sonuc = df[df["Eczane"]==eczane]
 
-    st.dataframe(
-        sonuc.sort_values("Tarih"),
-        use_container_width=True
-    )
+        col1,col2,col3 = st.columns(3)
+
+        col1.metric("Toplam Nöbet",len(sonuc))
+        col2.metric("Grup",sonuc["Grup"].iloc[0])
+        col3.metric("Toplam Ay",sonuc["Ay"].nunique())
+
+        st.divider()
+
+        st.subheader("📊 Günlere Göre Nöbet Dağılımı")
+
+        gun_sayim = sonuc["Gün"].value_counts().reset_index()
+        gun_sayim.columns = ["Gün","Sayı"]
+
+        gun_sayim["Gün"] = pd.Categorical(
+            gun_sayim["Gün"],
+            categories=gun_sira,
+            ordered=True
+        )
+
+        fig = px.bar(
+            gun_sayim,
+            x="Gün",
+            y="Sayı",
+            color="Gün",
+            text="Sayı"
+        )
+
+        st.plotly_chart(fig,use_container_width=True)
+
+        st.subheader("📅 Nöbet Zaman Çizelgesi")
+
+        fig = px.scatter(
+            sonuc,
+            x="Tarih",
+            y="Grup",
+            color="Gün"
+        )
+
+        st.plotly_chart(fig,use_container_width=True)
+
+        st.subheader("📋 Nöbet Listesi")
+
+        st.dataframe(
+            sonuc.sort_values("Tarih"),
+            use_container_width=True
+        )
