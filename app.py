@@ -90,7 +90,7 @@ if menu == "Genel Özet":
     ozet["Bayram"] = ozet["Bayram"].fillna(0)
 
     # Kolon sırası düzeni
-    sabit_kolonlar = ["Eczane","Grup","Toplam Nöbet"]
+    sabit_kolonlar = ["Eczane","Grup","Toplam Nöbet","Bayram"]
     diger_kolonlar = [col for col in ozet.columns if col not in sabit_kolonlar]
 
     ozet = ozet[sabit_kolonlar + diger_kolonlar]
