@@ -37,6 +37,7 @@ def load_excel(file):
         if "Tarih" not in df.columns:
             continue
 
+        # Tarihi düzelt
         df["Tarih"] = pd.to_datetime(df["Tarih"], errors="coerce")
 
         df_long = df.melt(
@@ -69,12 +70,12 @@ df, genel = load_excel(file)
 menu = st.sidebar.radio("Menü", [
     "Genel Özet",
     "Tarih Seç",
-    "Aylık Takvim",
     "Grup Analizi",
     "Eczane Analizi"
 ])
 
 gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
+
 
 # GENEL ÖZET
 if menu == "Genel Özet":
@@ -102,6 +103,8 @@ if menu == "Genel Özet":
 
     st.divider()
 
+    st.subheader("Özet Tablo")
+
     gun_pivot = pd.pivot_table(
         df,
         index=["Eczane","Grup"],
@@ -118,8 +121,6 @@ if menu == "Genel Özet":
 
     ozet.fillna(0, inplace=True)
 
-    st.subheader("Özet Tablo")
-
     st.dataframe(ozet, use_container_width=True)
 
 
@@ -133,44 +134,12 @@ elif menu == "Tarih Seç":
 
     sonuc = df[df["Tarih"] == tarih]
 
-    st.subheader(f"{tarih} nöbetçi eczaneler")
+    st.subheader("Nöbetçi Eczaneler")
 
     st.dataframe(
         sonuc[["Tarih","Gün","Grup","Eczane"]],
         use_container_width=True
     )
-
-
-# AYLIK TAKVİM
-elif menu == "Aylık Takvim":
-
-    ay = st.selectbox(
-        "Ay seç",
-        sorted(df["Ay"].unique())
-    )
-
-    sonuc = df[df["Ay"] == ay]
-
-    pivot = sonuc.pivot(
-        index="Tarih",
-        columns="Grup",
-        values="Eczane"
-    )
-
-    pivot = pivot.fillna("")
-
-    def highlight(val):
-
-        if val == "":
-            return "background-color:#eeeeee"
-
-        return "background-color:#d4edda"
-
-    styled = pivot.style.map(highlight)
-
-    st.subheader(f"{ay} Takvim")
-
-    st.dataframe(styled, use_container_width=True)
 
 
 # GRUP ANALİZİ
