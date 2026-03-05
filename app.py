@@ -160,7 +160,7 @@ elif menu == "Grup Analizi":
         y="Nöbet Sayısı",
         color="Eczane",
         barmode="group",
-        title=f"{grup} Günlere Göre Nöbet Dağılımı"
+        title=f"{grup} Günlere Göre Nöbet Dağılımı",
         category_orders={"Gün": gun_sira}
     )
 
