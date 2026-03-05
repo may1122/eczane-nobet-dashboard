@@ -104,17 +104,17 @@ if menu == "Genel Özet":
         "Geçmiş Bayram": 0
 })
 
-ozet = ozet.merge(gecmis, on="Eczane", how="left")
+    ozet = ozet.merge(gecmis, on="Eczane", how="left")
 
 # Toplam katsayı
-ozet["Toplam Katsayı"] = ozet["Toplam Nöbet"] + ozet["Geçmiş Katsayı"]
+    ozet["Toplam Katsayı"] = ozet["Toplam Nöbet"] + ozet["Geçmiş Katsayı"]
 
 # Gün sırası
-gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
-mevcut_gunler = [g for g in gun_sira if g in ozet.columns]
+    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
+    mevcut_gunler = [g for g in gun_sira if g in ozet.columns]
 
 # Kolon sırası
-ozet = ozet[
+    ozet = ozet[
     [
         "Eczane",
         "Grup",
