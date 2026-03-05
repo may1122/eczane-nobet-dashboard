@@ -161,6 +161,7 @@ elif menu == "Grup Analizi":
         color="Eczane",
         barmode="group",
         title=f"{grup} Günlere Göre Nöbet Dağılımı"
+        category_orders={"Gün": gun_sira}
     )
 
     st.plotly_chart(fig, use_container_width=True)  
