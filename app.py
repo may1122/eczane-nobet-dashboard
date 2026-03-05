@@ -118,11 +118,7 @@ if menu == "Genel Özet":
     [
         "Eczane",
         "Grup",
-        "Geçmiş Katsayı",
-        "Geçmiş Bayram",
-        "Toplam Nöbet",
-        "Toplam Katsayı",
-        "Bayram"
+        "Nöbet",
     ] + mevcut_gunler
 ]
 
