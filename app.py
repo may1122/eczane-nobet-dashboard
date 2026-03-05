@@ -97,10 +97,34 @@ if menu == "Genel Özet":
     ozet["Bayram"] = ozet["Bayram"].fillna(0)
 
     # Kolon sırası düzeni
-    sabit_kolonlar = ["Eczane","Grup","Toplam Nöbet","Bayram"]
-    diger_kolonlar = [col for col in ozet.columns if col not in sabit_kolonlar]
+    # Geçmiş değerler (şimdilik 0)
+    gecmis = pd.DataFrame({
+        "Eczane": ozet["Eczane"].unique(),
+        "Geçmiş Katsayı": 0,
+        "Geçmiş Bayram": 0
+})
 
-    ozet = ozet[sabit_kolonlar + diger_kolonlar]
+ozet = ozet.merge(gecmis, on="Eczane", how="left")
+
+# Toplam katsayı
+ozet["Toplam Katsayı"] = ozet["Toplam Nöbet"] + ozet["Geçmiş Katsayı"]
+
+# Gün sırası
+gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
+mevcut_gunler = [g for g in gun_sira if g in ozet.columns]
+
+# Kolon sırası
+ozet = ozet[
+    [
+        "Eczane",
+        "Grup",
+        "Geçmiş Katsayı",
+        "Geçmiş Bayram",
+        "Toplam Nöbet",
+        "Toplam Katsayı",
+        "Bayram"
+    ] + mevcut_gunler
+]
 
     st.dataframe(ozet, use_container_width=True)
     
