@@ -62,6 +62,41 @@ if menu == "Genel Özet":
 
     st.plotly_chart(fig, use_container_width=True)
     
+    st.divider()
+    st.subheader("Özet Tablo")
+
+    # Gün bazlı dağılım
+    gun_pivot = pd.pivot_table(
+        df,
+        index=["Eczane","Grup"],
+        columns="Gün",
+        aggfunc="size",
+        fill_value=0
+    ).reset_index()
+
+    # Toplam nöbet
+    toplam_nobet = df.groupby("Eczane").size().reset_index(name="Toplam Nöbet")
+
+    # Bayram sayısı (Gün içinde "Bayram" varsa)
+    if "Bayram" in df["Gün"].unique():
+        bayram = df[df["Gün"]=="Bayram"].groupby("Eczane").size().reset_index(name="Bayram")
+    else:
+        bayram = pd.DataFrame(columns=["Eczane","Bayram"])
+
+    # Merge
+    ozet = gun_pivot.merge(toplam_nobet, on="Eczane", how="left")
+    ozet = ozet.merge(bayram, on="Eczane", how="left")
+
+    ozet["Bayram"] = ozet["Bayram"].fillna(0)
+
+    # Kolon sırası düzeni
+    sabit_kolonlar = ["Eczane","Grup","Toplam Nöbet","Bayram"]
+    diger_kolonlar = [col for col in ozet.columns if col not in sabit_kolonlar]
+
+    ozet = ozet[sabit_kolonlar + diger_kolonlar]
+
+    st.dataframe(ozet, use_container_width=True)
+    
 elif menu == "Tarih Seç":
     tarih = st.selectbox("Tarih", sorted(df["Tarih"].unique()))
     sonuc = df[df["Tarih"]==tarih]
