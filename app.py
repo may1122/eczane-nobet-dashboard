@@ -4,7 +4,6 @@ import plotly.express as px
 
 st.set_page_config(page_title="Eczane Nöbet Takip Sistemi", layout="wide")
 
-
 @st.cache_data
 def load_excel(file):
 
@@ -69,7 +68,6 @@ menu = st.sidebar.radio("Menü", [
     "Eczane Analizi"
 ])
 
-
 # GENEL ÖZET
 if menu == "Genel Özet":
 
@@ -96,10 +94,45 @@ if menu == "Genel Özet":
 
     st.divider()
 
-    # EXCELDEKİ GENEL TABLOYU GÖSTER
     st.subheader("Özet Tablo")
 
-    st.dataframe(genel, use_container_width=True)
+    # Gün dağılımı pivot
+    gun_pivot = pd.pivot_table(
+        df,
+        index=["Eczane","Grup"],
+        columns="Gün",
+        aggfunc="size",
+        fill_value=0
+    ).reset_index()
+
+    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
+
+    mevcut_gunler = [g for g in gun_sira if g in gun_pivot.columns]
+
+    gun_pivot = gun_pivot[["Eczane","Grup"] + mevcut_gunler]
+
+    # GENEL tablosu ile birleştir
+    ozet = genel.merge(gun_pivot, on=["Eczane","Grup"], how="left")
+
+    # boş günleri 0 yap
+    for g in gun_sira:
+        if g in ozet.columns:
+            ozet[g] = ozet[g].fillna(0)
+
+    # kolon sırası
+    ozet = ozet[
+        [
+            "Eczane",
+            "Grup",
+            "Geçmiş Katsayı",
+            "Geçmiş Bayram",
+            "Toplam Nöbet",
+            "Toplam Katsayı",
+            "Bayram"
+        ] + mevcut_gunler
+    ]
+
+    st.dataframe(ozet, use_container_width=True)
 
 
 # TARİH SEÇ
@@ -155,12 +188,12 @@ elif menu == "Grup Analizi":
 
     sayim = (
         sonuc
-        .groupby(["Gün", "Eczane"])
+        .groupby(["Gün","Eczane"])
         .size()
         .reset_index(name="Nöbet Sayısı")
     )
 
-    gun_sira = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
+    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
 
     sayim["Gün"] = pd.Categorical(
         sayim["Gün"],
