@@ -141,6 +141,7 @@ elif menu == "Grup Analizi":
 
     sonuc = df[df["Grup"] == grup]
 
+    # Gün + Eczane bazlı sayım
     sayim = (
         sonuc
         .groupby(["Gün","Eczane"])
@@ -148,25 +149,11 @@ elif menu == "Grup Analizi":
         .reset_index(name="Nöbet Sayısı")
     )
 
-    # Gün sırası
-    gun_sira = [
-        "Pazartesi",
-        "Salı",
-        "Çarşamba",
-        "Perşembe",
-        "Cuma",
-        "Cumartesi",
-        "Pazar"
-    ]
+    # Gün sırası (doğru sırada görünmesi için)
+    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
+    sayim["Gün"] = pd.Categorical(sayim["Gün"], categories=gun_sira, ordered=True)
 
-    sayim["Gün"] = pd.Categorical(
-        sayim["Gün"],
-        categories=gun_sira,
-        ordered=True
-    )
-
-    sayim = sayim.sort_values("Gün")
-
+    # Grafik
     fig = px.bar(
         sayim,
         x="Gün",
@@ -176,7 +163,7 @@ elif menu == "Grup Analizi":
         title=f"{grup} Günlere Göre Nöbet Dağılımı"
     )
 
-    st.plotly_chart(fig, use_container_width=True)    
+    st.plotly_chart(fig, use_container_width=True)  
 
 
 
