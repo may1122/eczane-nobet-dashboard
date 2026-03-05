@@ -129,9 +129,10 @@ elif menu == "Aylık Takvim":
     styled = pivot.style.applymap(highlight_cells)
 
     st.dataframe(styled, use_container_width=True)
-
-
+    
 elif menu == "Grup Analizi":
+
+    st.subheader("Grup Günlere Göre Nöbet Dağılımı")
 
     grup = st.selectbox(
         "Grup seç",
@@ -140,7 +141,31 @@ elif menu == "Grup Analizi":
 
     sonuc = df[df["Grup"] == grup]
 
-    st.bar_chart(sonuc["Eczane"].value_counts())
+    # Gün + Eczane bazlı sayım
+    sayim = (
+        sonuc
+        .groupby(["Gün","Eczane"])
+        .size()
+        .reset_index(name="Nöbet Sayısı")
+    )
+
+    # Gün sırası (doğru sırada görünmesi için)
+    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
+    sayim["Gün"] = pd.Categorical(sayim["Gün"], categories=gun_sira, ordered=True)
+
+    # Grafik
+    fig = px.bar(
+        sayim,
+        x="Gün",
+        y="Nöbet Sayısı",
+        color="Eczane",
+        barmode="group",
+        title=f"{grup} Günlere Göre Nöbet Dağılımı"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
 
 
 elif menu == "Eczane Analizi":
