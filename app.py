@@ -141,6 +141,35 @@ elif menu == "Tarih Seç":
         use_container_width=True
     )
 
+# AYLIK TAKVİM
+elif menu == "Aylık Takvim":
+
+    ay = st.selectbox(
+        "Ay seç",
+        sorted(df["Ay"].unique())
+    )
+
+    sonuc = df[df["Ay"] == ay]
+
+    pivot = sonuc.pivot(
+        index="Tarih",
+        columns="Grup",
+        values="Eczane"
+    )
+
+    pivot = pivot.fillna("")
+
+    def highlight_cells(val):
+        if val == "":
+            return "background-color: #eeeeee"
+        else:
+            return "background-color: #d4edda"
+
+    styled = pivot.style.applymap(highlight_cells)
+
+    st.dataframe(styled, use_container_width=True)
+
+
 
 # GRUP ANALİZİ
 elif menu == "Grup Analizi":
