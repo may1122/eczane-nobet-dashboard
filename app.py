@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -201,8 +202,3 @@ elif menu == "Grup Analizi":
 
 
 
-elif menu == "Eczane Analizi":
-    eczane = st.selectbox("Eczane", sorted(df["Eczane"].unique()))
-    sonuc = df[df["Eczane"]==eczane]
-    st.metric("Toplam Nöbet", len(sonuc))
-    st.dataframe(sonuc.sort_values("Tarih"))
