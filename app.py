@@ -5,11 +5,11 @@ from streamlit_calendar import calendar
 
 st.set_page_config(page_title="Eczane Nöbet Dashboard", layout="wide")
 
-st.title("💊 Eczane Nöbet Analiz Dashboard")
+st.title("💊 Eczane Nöbet Dashboard")
 
-# ---------------------------------------------------
+# -------------------------------------------------
 # EXCEL OKUMA
-# ---------------------------------------------------
+# -------------------------------------------------
 
 @st.cache_data
 def load_excel(file):
@@ -17,53 +17,73 @@ def load_excel(file):
     xls = pd.ExcelFile(file)
 
     df_list = []
+    genel = None
 
     for sheet in xls.sheet_names:
 
+        df = pd.read_excel(xls, sheet_name=sheet)
+
+        # unnamed sütun sil
+        df = df.loc[:, ~df.columns.astype(str).str.contains("Unnamed")]
+
+        # GENEL sayfası
         if sheet.upper() == "GENEL":
-            genel = pd.read_excel(xls, sheet_name=sheet)
+            genel = df
+            continue
 
-            # unnamed sütun sil
-            genel = genel.loc[:, ~genel.columns.str.contains("^Unnamed")]
+        # boş satırları sil
+        df = df.dropna(how="all")
 
-        else:
+        # Grup sütunu ekle
+        df["Grup"] = sheet
 
-            df = pd.read_excel(xls, sheet_name=sheet)
+        df_list.append(df)
 
-            # unnamed sütun sil
-            df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
-
-            df["Grup"] = sheet
-
-            df_list.append(df)
+    if len(df_list) == 0:
+        st.error("Excel sayfaları okunamadı.")
+        st.stop()
 
     df = pd.concat(df_list, ignore_index=True)
 
-    # ------------------------------------------------
+    # ----------------------------------------------
+    # Tarih sütunlarını bul
+    # ----------------------------------------------
+
+    tarih_sutunlari = []
+
+    for col in df.columns:
+
+        try:
+            pd.to_datetime(col)
+            tarih_sutunlari.append(col)
+        except:
+            pass
+
+    if len(tarih_sutunlari) == 0:
+        st.error("Tarih sütunları bulunamadı.")
+        st.stop()
+
+    # ----------------------------------------------
     # LONG FORMAT
-    # ------------------------------------------------
+    # ----------------------------------------------
 
     df_long = df.melt(
         id_vars=["Grup"],
+        value_vars=tarih_sutunlari,
         var_name="Tarih",
         value_name="Eczane"
     )
 
-    # tarih güvenli parse
-    df_long["Tarih"] = pd.to_datetime(
-        df_long["Tarih"],
-        errors="coerce"
-    )
+    df_long["Tarih"] = pd.to_datetime(df_long["Tarih"], errors="coerce")
 
-    # boş satırları sil
     df_long = df_long.dropna(subset=["Tarih", "Eczane"])
 
     return df_long, genel
 
 
-# ---------------------------------------------------
-# DOSYA YÜKLEME
-# ---------------------------------------------------
+# -------------------------------------------------
+# DOSYA YÜKLE
+# -------------------------------------------------
 
 file = st.file_uploader("Excel Dosyası Yükle", type=["xlsx"])
 
@@ -72,78 +92,68 @@ if file is None:
 
 df, genel = load_excel(file)
 
-# ---------------------------------------------------
+# -------------------------------------------------
 # ECZANE ARAMA
-# ---------------------------------------------------
+# -------------------------------------------------
 
-st.sidebar.header("🔎 Filtreler")
+st.sidebar.header("🔎 Filtre")
 
 eczane_arama = st.sidebar.text_input("Eczane Ara")
 
 if eczane_arama:
-    df = df[df["Eczane"].str.contains(eczane_arama, case=False)]
+    df = df[df["Eczane"].astype(str).str.contains(eczane_arama, case=False)]
 
-# ---------------------------------------------------
+# -------------------------------------------------
 # GENEL İSTATİSTİK
-# ---------------------------------------------------
+# -------------------------------------------------
 
-st.subheader("📊 Genel Nöbet Sayıları")
+st.subheader("📊 Eczane Nöbet Sayıları")
 
-eczane_sayim = df["Eczane"].value_counts().reset_index()
-eczane_sayim.columns = ["Eczane", "Nöbet"]
+sayim = df["Eczane"].value_counts().reset_index()
+sayim.columns = ["Eczane", "Nöbet"]
 
-fig = px.bar(
-    eczane_sayim,
-    x="Eczane",
-    y="Nöbet",
-    title="Eczane Nöbet Sayısı"
-)
+fig = px.bar(sayim, x="Eczane", y="Nöbet")
 
 st.plotly_chart(fig, use_container_width=True)
 
-# ---------------------------------------------------
-# GRUP ANALİZİ
-# ---------------------------------------------------
+# -------------------------------------------------
+# GRUP ANALİZ
+# -------------------------------------------------
 
 st.subheader("👥 Grup Analizi")
 
-grup_sayim = df.groupby("Grup")["Eczane"].count().reset_index()
+grup = df.groupby("Grup")["Eczane"].count().reset_index()
 
-fig2 = px.bar(
-    grup_sayim,
-    x="Grup",
-    y="Eczane",
-    title="Grup Nöbet Sayıları"
-)
+fig2 = px.bar(grup, x="Grup", y="Eczane")
 
 st.plotly_chart(fig2, use_container_width=True)
 
-# ---------------------------------------------------
-# TAKVİM OLUŞTURMA
-# ---------------------------------------------------
+# -------------------------------------------------
+# TAKVİM
+# -------------------------------------------------
 
 st.subheader("📅 Nöbet Takvimi")
 
 events = []
 
-for i, row in df.iterrows():
+for _, row in df.iterrows():
 
     events.append(
         {
-            "title": row["Eczane"],
-            "start": str(row["Tarih"].date())
+            "title": str(row["Eczane"]),
+            "start": row["Tarih"].strftime("%Y-%m-%d")
         }
     )
 
 calendar_options = {
-    "initialView": "dayGridMonth",
+    "initialView": "dayGridMonth"
 }
 
 calendar(events=events, options=calendar_options)
 
-# ---------------------------------------------------
-# TARİHE GÖRE ARAMA
-# ---------------------------------------------------
+# -------------------------------------------------
+# TARİH FİLTRE
+# -------------------------------------------------
 
 st.subheader("📆 Tarihe Göre Nöbet")
 
@@ -153,19 +163,16 @@ sonuc = df[df["Tarih"] == pd.to_datetime(tarih)]
 
 st.dataframe(sonuc)
 
-# ---------------------------------------------------
-# ECZANE ANALİZ
-# ---------------------------------------------------
+# -------------------------------------------------
+# ECZANE DETAY
+# -------------------------------------------------
 
 st.subheader("🏥 Eczane Detay")
 
-eczane_sec = st.selectbox(
-    "Eczane Seç",
-    df["Eczane"].unique()
-)
+eczane = st.selectbox("Eczane Seç", sorted(df["Eczane"].unique()))
 
-eczane_df = df[df["Eczane"] == eczane_sec]
+eczane_df = df[df["Eczane"] == eczane]
 
-st.write("Toplam Nöbet:", len(eczane_df))
+st.write("Toplam nöbet:", len(eczane_df))
 
 st.dataframe(eczane_df)
