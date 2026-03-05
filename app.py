@@ -177,14 +177,25 @@ elif menu == "Aylık Takvim":
 # GRUP ANALİZİ
 elif menu == "Grup Analizi":
 
-    st.subheader("Grup Günlere Göre Nöbet Dağılımı")
+    st.title("Grup Görünümü")
 
-    grup = st.selectbox(
-        "Grup seç",
-        sorted(df["Grup"].unique())
+    grup_sec = st.selectbox(
+        "Grup Seçin",
+        sorted(genel["Grup"].unique())
     )
 
-    sonuc = df[df["Grup"] == grup]
+    # seçilen grubun tablosu
+    grup_tablo = ozet[ozet["Grup"] == grup_sec]
+
+    st.subheader(f"Grup {grup_sec} Eczaneleri")
+
+    st.dataframe(grup_tablo, use_container_width=True)
+
+    st.divider()
+
+    st.subheader("Grup Günlere Göre Nöbet Dağılımı")
+
+    sonuc = df[df["Grup"] == grup_sec]
 
     sayim = (
         sonuc
@@ -207,12 +218,11 @@ elif menu == "Grup Analizi":
         y="Nöbet Sayısı",
         color="Eczane",
         barmode="group",
-        title=f"{grup} Günlere Göre Nöbet Dağılımı",
+        title=f"{grup_sec} Günlere Göre Nöbet Dağılımı",
         category_orders={"Gün": gun_sira}
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
 
 # ECZANE ANALİZİ
 elif menu == "Eczane Analizi":
