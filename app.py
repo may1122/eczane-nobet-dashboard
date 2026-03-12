@@ -287,9 +287,33 @@ elif menu == "Grup Analizi":
 # ECZANE ANALİZİ
 elif menu == "Eczane Analizi":
 
+    st.subheader("Eczane Arama")
+
+    # 🔎 Arama kutusu
+    arama = st.text_input("Eczane adı ara")
+
+    eczane_listesi = sorted(df["Eczane"].unique())
+
+    # Arama varsa filtrele
+    if arama:
+        eczane_listesi = [
+            e for e in eczane_listesi
+            if arama.lower() in e.lower()
+        ]
+
+    # Scroll + seçim
     eczane = st.selectbox(
-        "Eczane",
-        sorted(df["Eczane"].unique())
+        "Eczane seç",
+        eczane_listesi
+    )
+
+    sonuc = df[df["Eczane"] == eczane]
+
+    st.metric("Toplam Nöbet", len(sonuc))
+
+    st.dataframe(
+        sonuc.sort_values("Tarih"),
+        use_container_width=True
     )
 
     sonuc = df[df["Eczane"] == eczane]
