@@ -143,26 +143,26 @@ if menu == "Genel Özet":
 
 
 # TARİH SEÇ
+# TARİH SEÇ
 elif menu == "Tarih Seç":
 
-    def format_tarih(t):
+    # Excel'den tarih aralığı al
+    min_tarih = df["Tarih"].min()
+    max_tarih = df["Tarih"].max()
 
-    gun = t.day
-    ay = aylar_tr[t.month]
-    yil = t.year
+    # Tarih widget
+    tarih = st.date_input(
+        "Tarih seçin",
+        value=min_tarih,
+        min_value=min_tarih,
+        max_value=max_tarih
+    )
 
-    return f"{gun} {ay} {yil}"
+    # Seçilen tarihe göre filtrele
+    sonuc = df[df["Tarih"] == pd.to_datetime(tarih)]
 
-
-tarih = st.selectbox(
-    "Tarih",
-    sorted(df["Tarih"].dropna().unique()),
-    format_func=format_tarih
-)
-
-    sonuc = df[df["Tarih"] == tarih]
-
-    st.dataframe(sonuc)
+    st.subheader(f"Seçilen Tarih: {tarih.day} {aylar_tr[tarih.month]} {tarih.year}")
+    st.dataframe(sonuc.sort_values("Tarih"), use_container_width=True)
 
 
 # AYLIK TAKVİM
