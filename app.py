@@ -145,10 +145,19 @@ if menu == "Genel Özet":
 # TARİH SEÇ
 elif menu == "Tarih Seç":
 
-    tarih = st.selectbox(
+    def format_tarih(t):
+
+    gun = t.day
+    ay = aylar_tr[t.month]
+    yil = t.year
+
+    return f"{gun} {ay} {yil}"
+
+
+tarih = st.selectbox(
     "Tarih",
     sorted(df["Tarih"].dropna().unique()),
-    format_func=lambda x: x.strftime("%d %B %Y")
+    format_func=format_tarih
 )
 
     sonuc = df[df["Tarih"] == tarih]
