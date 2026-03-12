@@ -147,8 +147,8 @@ if menu == "Genel Özet":
 elif menu == "Tarih Seç":
 
     # Excel'den tarih aralığı al
-    min_tarih = df["Tarih"].min()
-    max_tarih = df["Tarih"].max()
+    min_tarih = df["Tarih"].min().date()
+    max_tarih = df["Tarih"].max().date()
 
     # Tarih widget
     tarih = st.date_input(
@@ -158,10 +158,16 @@ elif menu == "Tarih Seç":
         max_value=max_tarih
     )
 
-    # Seçilen tarihe göre filtrele
-    sonuc = df[df["Tarih"] == pd.to_datetime(tarih)]
+    # tarih bir liste mi, tek mi kontrol et
+    if isinstance(tarih, list):
+        secilen_tarih = tarih[0]  # sadece ilk tarihi al
+    else:
+        secilen_tarih = tarih
 
-    st.subheader(f"Seçilen Tarih: {tarih.day} {aylar_tr[tarih.month]} {tarih.year}")
+    # Seçilen tarihe göre filtrele
+    sonuc = df[df["Tarih"].dt.date == secilen_tarih]
+
+    st.subheader(f"Seçilen Tarih: {secilen_tarih.day} {aylar_tr[secilen_tarih.month]} {secilen_tarih.year}")
     st.dataframe(sonuc.sort_values("Tarih"), use_container_width=True)
 
 
