@@ -1,3 +1,19 @@
+aylar_tr = {
+    1: "Ocak",
+    2: "Şubat",
+    3: "Mart",
+    4: "Nisan",
+    5: "Mayıs",
+    6: "Haziran",
+    7: "Temmuz",
+    8: "Ağustos",
+    9: "Eylül",
+    10: "Ekim",
+    11: "Kasım",
+    12: "Aralık"
+}
+
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -143,10 +159,8 @@ if menu == "Genel Özet":
 
 
 # TARİH SEÇ
-# TARİH SEÇ
 elif menu == "Tarih Seç":
 
-    # Excel'den tarih aralığı al
     min_tarih = df["Tarih"].min().date()
     max_tarih = df["Tarih"].max().date()
 
@@ -158,9 +172,9 @@ elif menu == "Tarih Seç":
         max_value=max_tarih
     )
 
-    # tarih bir liste mi, tek mi kontrol et
-    if isinstance(tarih, list):
-        secilen_tarih = tarih[0]  # sadece ilk tarihi al
+    # Eğer tarih pandas.Timestamp ise .date() ile datetime.date dönüştür
+    if hasattr(tarih, "to_pydatetime"):
+        secilen_tarih = tarih.to_pydatetime().date()
     else:
         secilen_tarih = tarih
 
@@ -169,6 +183,7 @@ elif menu == "Tarih Seç":
 
     st.subheader(f"Seçilen Tarih: {secilen_tarih.day} {aylar_tr[secilen_tarih.month]} {secilen_tarih.year}")
     st.dataframe(sonuc.sort_values("Tarih"), use_container_width=True)
+
 
 
 # AYLIK TAKVİM
