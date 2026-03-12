@@ -44,6 +44,14 @@ def load_excel(file):
         )
 
         df_long = df_long.dropna(subset=["Eczane"])
+
+        # TARİHİ GERÇEK TARİHE ÇEVİR
+        df_long["Tarih"] = pd.to_datetime(
+        df_long["Tarih"],
+        dayfirst=True,
+        errors="coerce"
+)
+
         df_long["Ay"] = sheet
 
         all_data.append(df_long)
@@ -137,7 +145,11 @@ if menu == "Genel Özet":
 # TARİH SEÇ
 elif menu == "Tarih Seç":
 
-    tarih = st.selectbox("Tarih", sorted(df["Tarih"].unique()))
+    tarih = st.selectbox(
+    "Tarih",
+    sorted(df["Tarih"].dropna().unique()),
+    format_func=lambda x: x.strftime("%d %B %Y")
+)
 
     sonuc = df[df["Tarih"] == tarih]
 
