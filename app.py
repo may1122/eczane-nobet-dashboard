@@ -43,7 +43,6 @@ def load_excel(file):
                 "Grup",
                 "Geçmiş Katsayı",
                 "Geçmiş Bayram",
-                "Toplam Nöbet",
                 "Toplam Katsayı",
                 "Bayram"
             ]]
