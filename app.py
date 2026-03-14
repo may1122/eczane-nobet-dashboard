@@ -148,7 +148,6 @@ if menu == "Genel Özet":
             "Grup",
             "Geçmiş Katsayı",
             "Geçmiş Bayram",
-            "Toplam Nöbet",
             "Toplam Katsayı",
             "Bayram"
         ] + mevcut_gunler
