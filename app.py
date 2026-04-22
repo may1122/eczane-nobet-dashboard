@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -66,11 +67,11 @@ section[data-testid="stSidebar"] {
 }
 
 section[data-testid="stSidebar"] .block-container {
-    padding-top: 1.4rem;
+    padding-top: 1.2rem;
 }
 
 .block-container {
-    padding-top: 2.8rem;
+    padding-top: 2.4rem;
     padding-bottom: 2rem;
 }
 
@@ -78,7 +79,7 @@ section[data-testid="stSidebar"] .block-container {
     font-size: 2.2rem;
     font-weight: 800;
     color: var(--text);
-    margin-top: 0.4rem;
+    margin-top: 0.2rem;
     margin-bottom: 0.35rem;
     line-height: 1.2;
     letter-spacing: -0.02em;
@@ -189,6 +190,24 @@ section[data-testid="stSidebar"] .block-container {
     font-size: 0.9rem;
 }
 
+.logo-wrap {
+    margin-bottom: 0.8rem;
+}
+
+.logo-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-top: 0.3rem;
+}
+
+.logo-subtitle {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 0.1rem;
+    margin-bottom: 1rem;
+}
+
 div[data-testid="metric-container"] {
     background: #ffffff;
     border: 1px solid var(--line);
@@ -225,12 +244,6 @@ div[data-testid="metric-container"] label {
 .stDateInput > div > div input {
     border-radius: 12px !important;
 }
-
-hr {
-    border: none;
-    border-top: 1px solid var(--line);
-    margin: 1rem 0;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -240,17 +253,13 @@ hr {
 @st.cache_data
 def load_excel(file):
     xls = pd.ExcelFile(file)
-
     all_data = []
     genel = None
 
     for sheet in xls.sheet_names:
         df_sheet = pd.read_excel(file, sheet_name=sheet)
-
-        # Unnamed sütunları kaldır
         df_sheet = df_sheet.loc[:, ~df_sheet.columns.astype(str).str.contains("^Unnamed")]
 
-        # GENEL sayfası
         if "GENEL" in sheet.upper():
             genel_cols = [
                 "Eczane",
@@ -260,12 +269,9 @@ def load_excel(file):
                 "Toplam Katsayı",
                 "Bayram"
             ]
-
             mevcut_genel_cols = [c for c in genel_cols if c in df_sheet.columns]
-
             if len(mevcut_genel_cols) >= 2:
                 genel = df_sheet[mevcut_genel_cols].copy()
-
             continue
 
         if "Tarih" not in df_sheet.columns or "Gün" not in df_sheet.columns:
@@ -278,25 +284,16 @@ def load_excel(file):
         )
 
         df_long = df_long.dropna(subset=["Eczane"]).copy()
-
-        df_long["Tarih"] = pd.to_datetime(
-            df_long["Tarih"],
-            dayfirst=True,
-            errors="coerce"
-        )
-
+        df_long["Tarih"] = pd.to_datetime(df_long["Tarih"], dayfirst=True, errors="coerce")
         df_long = df_long.dropna(subset=["Tarih"]).copy()
         df_long["Ay"] = sheet
-
         all_data.append(df_long)
 
     if not all_data:
         return pd.DataFrame(), genel
 
     df = pd.concat(all_data, ignore_index=True)
-
     return df, genel
-
 
 # ==============================
 # YARDIMCI FONKSİYONLAR
@@ -311,7 +308,6 @@ def show_metric_card(label, value):
         """,
         unsafe_allow_html=True
     )
-
 
 def prepare_ozet_table(df, genel):
     gun_sira = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
@@ -344,12 +340,10 @@ def prepare_ozet_table(df, genel):
         "Toplam Katsayı",
         "Bayram"
     ]
-
     mevcut_sabitler = [c for c in sabit_kolonlar if c in ozet.columns]
     ozet = ozet[mevcut_sabitler + mevcut_gunler]
 
     return ozet, gun_sira
-
 
 def render_header():
     st.markdown('<div class="main-title">AYÇA | Eczane Nöbet Takip Sistemi</div>', unsafe_allow_html=True)
@@ -373,6 +367,17 @@ def render_header():
         unsafe_allow_html=True
     )
 
+# ==============================
+# SIDEBAR LOGO
+# ==============================
+logo_path = "logo.png"
+
+if os.path.exists(logo_path):
+    st.sidebar.image(logo_path, use_container_width=True)
+else:
+    st.sidebar.markdown('<div class="logo-wrap">', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="logo-title">AYÇA Paneli</div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="logo-subtitle">Akıllı Yazılım Çözüm Asistanı</div>', unsafe_allow_html=True)
 
 # ==============================
 # ÜST ALAN
@@ -394,11 +399,10 @@ if df.empty:
 # ==============================
 # SIDEBAR
 # ==============================
-st.sidebar.markdown("## AYÇA Paneli")
-st.sidebar.caption("Akıllı Yazılım Çözüm Asistanı")
+st.sidebar.markdown("### Menü")
 
 menu = st.sidebar.radio(
-    "Menü",
+    "",
     [
         "Genel Özet",
         "Tarih Seç",
@@ -466,7 +470,6 @@ if menu == "Genel Özet":
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('<div class="section-title">Özet Tablo</div>', unsafe_allow_html=True)
-
     ozet, _ = prepare_ozet_table(df, genel)
     st.dataframe(ozet, use_container_width=True, height=500)
 
@@ -487,13 +490,8 @@ elif menu == "Tarih Seç":
             max_value=max_tarih
         )
 
-    if hasattr(tarih, "to_pydatetime"):
-        secilen_tarih = tarih.to_pydatetime().date()
-    else:
-        secilen_tarih = tarih
-
-    sonuc = df[df["Tarih"].dt.date == secilen_tarih].copy()
-    sonuc = sonuc.sort_values(["Grup", "Eczane"])
+    secilen_tarih = tarih.to_pydatetime().date() if hasattr(tarih, "to_pydatetime") else tarih
+    sonuc = df[df["Tarih"].dt.date == secilen_tarih].copy().sort_values(["Grup", "Eczane"])
 
     with col2:
         st.markdown(
@@ -540,19 +538,7 @@ elif menu == "Aylık Takvim":
         pivot.index = pd.to_datetime(pivot.index).strftime("%d.%m.%Y")
         pivot = pivot.reset_index().rename(columns={"index": "Tarih"})
 
-        def highlight_cells(val):
-            if val == "" or pd.isna(val):
-                return "background-color: #f1f4f8; color: #9aa6b2;"
-            return "background-color: #ecf8f0; color: #1b2430;"
-
-        veri_kolonlari = [c for c in pivot.columns if c != "Tarih"]
-
-        styled = pivot.style.applymap(
-            highlight_cells,
-            subset=veri_kolonlari
-        )
-
-        st.dataframe(styled, use_container_width=True, height=650)
+        st.dataframe(pivot, use_container_width=True, height=650)
 
 # ==============================
 # GRUP ANALİZİ
@@ -613,7 +599,6 @@ elif menu == "Grup Analizi":
         plot_bgcolor="rgba(0,0,0,0)",
         legend_title_text=""
     )
-
     st.plotly_chart(fig, use_container_width=True)
 
 # ==============================
