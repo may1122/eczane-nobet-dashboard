@@ -56,6 +56,10 @@ html, body, [class*="css"]  {
     background: linear-gradient(180deg, #f9fbff 0%, #f3f6fb 100%);
 }
 
+header[data-testid="stHeader"] {
+    background: rgba(0, 0, 0, 0);
+}
+
 section[data-testid="stSidebar"] {
     background: #ffffff;
     border-right: 1px solid var(--line);
@@ -66,7 +70,7 @@ section[data-testid="stSidebar"] .block-container {
 }
 
 .block-container {
-    padding-top: 1.2rem;
+    padding-top: 2.8rem;
     padding-bottom: 2rem;
 }
 
@@ -74,7 +78,9 @@ section[data-testid="stSidebar"] .block-container {
     font-size: 2.2rem;
     font-weight: 800;
     color: var(--text);
-    margin-bottom: 0.25rem;
+    margin-top: 0.4rem;
+    margin-bottom: 0.35rem;
+    line-height: 1.2;
     letter-spacing: -0.02em;
 }
 
@@ -516,18 +522,37 @@ elif menu == "Aylık Takvim":
     ay = st.selectbox("Ay seç", sorted(df["Ay"].unique()))
     sonuc = df[df["Ay"] == ay].copy()
 
-    pivot = sonuc.pivot(index="Tarih", columns="Grup", values="Eczane")
-    pivot = pivot.fillna("")
-
     st.markdown('<div class="section-title">Aylık nöbet takvimi</div>', unsafe_allow_html=True)
 
-    def highlight_cells(val):
-        if val == "":
-            return "background-color: #f1f4f8; color: #9aa6b2;"
-        return "background-color: #ecf8f0; color: #1b2430;"
+    if sonuc.empty:
+        st.warning("Seçilen ay için veri bulunamadı.")
+    else:
+        pivot = pd.pivot_table(
+            sonuc,
+            index="Tarih",
+            columns="Grup",
+            values="Eczane",
+            aggfunc="first"
+        )
 
-    styled = pivot.style.applymap(highlight_cells)
-    st.dataframe(styled, use_container_width=True, height=600)
+        pivot = pivot.fillna("")
+        pivot = pivot.sort_index()
+        pivot.index = pd.to_datetime(pivot.index).strftime("%d.%m.%Y")
+        pivot = pivot.reset_index().rename(columns={"index": "Tarih"})
+
+        def highlight_cells(val):
+            if val == "" or pd.isna(val):
+                return "background-color: #f1f4f8; color: #9aa6b2;"
+            return "background-color: #ecf8f0; color: #1b2430;"
+
+        veri_kolonlari = [c for c in pivot.columns if c != "Tarih"]
+
+        styled = pivot.style.applymap(
+            highlight_cells,
+            subset=veri_kolonlari
+        )
+
+        st.dataframe(styled, use_container_width=True, height=650)
 
 # ==============================
 # GRUP ANALİZİ
