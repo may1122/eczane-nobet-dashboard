@@ -373,7 +373,7 @@ def render_header():
 logo_path = "logo.png"
 
 if os.path.exists(logo_path):
-    st.sidebar.image(logo_path, width=260)
+    st.sidebar.image(logo_path, width=360)
 else:
     st.sidebar.markdown('<div class="logo-wrap">', unsafe_allow_html=True)
     st.sidebar.markdown('<div class="logo-title">AYÇA Paneli</div>', unsafe_allow_html=True)
