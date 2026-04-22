@@ -1,3 +1,10 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+# ==============================
+# AY ADLARI
+# ==============================
 aylar_tr = {
     1: "Ocak",
     2: "Şubat",
@@ -13,70 +20,358 @@ aylar_tr = {
     12: "Aralık"
 }
 
+# ==============================
+# SAYFA AYARI
+# ==============================
+st.set_page_config(
+    page_title="AYÇA | Eczane Nöbet Takip Sistemi",
+    page_icon="💊",
+    layout="wide"
+)
 
-import streamlit as st
-import pandas as pd
-import plotly.express as px
+# ==============================
+# TASARIM / CSS
+# ==============================
+st.markdown("""
+<style>
+:root {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --primary: #1f4b99;
+    --primary2: #2e6bdb;
+    --accent: #22a06b;
+    --text: #1b2430;
+    --muted: #5e6b7a;
+    --line: #dbe3ee;
+    --soft: #eef4ff;
+    --shadow: 0 12px 30px rgba(22, 34, 51, 0.08);
+    --radius: 18px;
+}
 
-st.set_page_config(page_title="Eczane Nöbet Takip Sistemi", layout="wide")
+html, body, [class*="css"]  {
+    font-family: "Inter", sans-serif;
+}
 
+.stApp {
+    background: linear-gradient(180deg, #f9fbff 0%, #f3f6fb 100%);
+}
+
+section[data-testid="stSidebar"] {
+    background: #ffffff;
+    border-right: 1px solid var(--line);
+}
+
+section[data-testid="stSidebar"] .block-container {
+    padding-top: 1.4rem;
+}
+
+.block-container {
+    padding-top: 1.2rem;
+    padding-bottom: 2rem;
+}
+
+.main-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+}
+
+.main-subtitle {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.hero-box {
+    background: linear-gradient(135deg, rgba(31,75,153,0.08), rgba(34,160,107,0.08));
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.2rem;
+}
+
+.hero-badge {
+    display: inline-block;
+    background: #e9f1ff;
+    color: var(--primary);
+    border: 1px solid #cfe0ff;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.hero-headline {
+    font-size: 2rem;
+    line-height: 1.08;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 10px;
+    letter-spacing: -0.02em;
+}
+
+.hero-headline .blue {
+    color: var(--primary2);
+}
+
+.hero-headline .green {
+    color: var(--accent);
+}
+
+.hero-text {
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.75;
+    max-width: 900px;
+}
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 18px;
+    box-shadow: var(--shadow);
+}
+
+.card-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+}
+
+.card-desc {
+    color: var(--muted);
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.metric-card {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+}
+
+.metric-label {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.metric-value {
+    color: var(--text);
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.section-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text);
+    margin: 0.4rem 0 0.8rem 0;
+}
+
+.small-note {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+div[data-testid="metric-container"] {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    padding: 14px;
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+}
+
+div[data-testid="metric-container"] label {
+    color: var(--muted) !important;
+    font-weight: 600 !important;
+}
+
+.stButton > button {
+    background: linear-gradient(135deg, var(--primary), var(--primary2));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 0.65rem 1.1rem;
+    font-weight: 700;
+}
+
+.stDownloadButton > button {
+    background: linear-gradient(135deg, var(--primary), var(--primary2));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 0.65rem 1.1rem;
+    font-weight: 700;
+}
+
+.stSelectbox > div > div,
+.stTextInput > div > div > input,
+.stDateInput > div > div input {
+    border-radius: 12px !important;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 1rem 0;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ==============================
+# EXCEL OKUMA
+# ==============================
 @st.cache_data
 def load_excel(file):
-
     xls = pd.ExcelFile(file)
 
     all_data = []
     genel = None
 
     for sheet in xls.sheet_names:
+        df_sheet = pd.read_excel(file, sheet_name=sheet)
 
-        df = pd.read_excel(file, sheet_name=sheet)
+        # Unnamed sütunları kaldır
+        df_sheet = df_sheet.loc[:, ~df_sheet.columns.astype(str).str.contains("^Unnamed")]
 
-        # Unnamed sütunlarını kaldır
-        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-
-        # GENEL sayfasını oku
+        # GENEL sayfası
         if "GENEL" in sheet.upper():
-
-            genel = df[[
+            genel_cols = [
                 "Eczane",
                 "Grup",
                 "Geçmiş Katsayı",
                 "Geçmiş Bayram",
                 "Toplam Katsayı",
                 "Bayram"
-            ]]
+            ]
+
+            mevcut_genel_cols = [c for c in genel_cols if c in df_sheet.columns]
+
+            if len(mevcut_genel_cols) >= 2:
+                genel = df_sheet[mevcut_genel_cols].copy()
 
             continue
 
-        if "Tarih" not in df.columns:
+        if "Tarih" not in df_sheet.columns or "Gün" not in df_sheet.columns:
             continue
 
-        df_long = df.melt(
+        df_long = df_sheet.melt(
             id_vars=["Tarih", "Gün"],
             var_name="Grup",
             value_name="Eczane"
         )
 
-        df_long = df_long.dropna(subset=["Eczane"])
+        df_long = df_long.dropna(subset=["Eczane"]).copy()
 
-        # TARİHİ GERÇEK TARİHE ÇEVİR
         df_long["Tarih"] = pd.to_datetime(
-        df_long["Tarih"],
-        dayfirst=True,
-        errors="coerce"
-)
+            df_long["Tarih"],
+            dayfirst=True,
+            errors="coerce"
+        )
 
+        df_long = df_long.dropna(subset=["Tarih"]).copy()
         df_long["Ay"] = sheet
 
         all_data.append(df_long)
+
+    if not all_data:
+        return pd.DataFrame(), genel
 
     df = pd.concat(all_data, ignore_index=True)
 
     return df, genel
 
 
-st.title("💊 Eczane Nöbet Takip Sistemi")
+# ==============================
+# YARDIMCI FONKSİYONLAR
+# ==============================
+def show_metric_card(label, value):
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">{label}</div>
+            <div class="metric-value">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def prepare_ozet_table(df, genel):
+    gun_sira = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
+
+    gun_pivot = pd.pivot_table(
+        df,
+        index=["Eczane", "Grup"],
+        columns="Gün",
+        aggfunc="size",
+        fill_value=0
+    ).reset_index()
+
+    mevcut_gunler = [g for g in gun_sira if g in gun_pivot.columns]
+    gun_pivot = gun_pivot[["Eczane", "Grup"] + mevcut_gunler]
+
+    if genel is not None and {"Eczane", "Grup"}.issubset(genel.columns):
+        ozet = genel.merge(gun_pivot, on=["Eczane", "Grup"], how="left")
+    else:
+        ozet = gun_pivot.copy()
+
+    for g in gun_sira:
+        if g in ozet.columns:
+            ozet[g] = ozet[g].fillna(0)
+
+    sabit_kolonlar = [
+        "Eczane",
+        "Grup",
+        "Geçmiş Katsayı",
+        "Geçmiş Bayram",
+        "Toplam Katsayı",
+        "Bayram"
+    ]
+
+    mevcut_sabitler = [c for c in sabit_kolonlar if c in ozet.columns]
+    ozet = ozet[mevcut_sabitler + mevcut_gunler]
+
+    return ozet, gun_sira
+
+
+def render_header():
+    st.markdown('<div class="main-title">AYÇA | Eczane Nöbet Takip Sistemi</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="main-subtitle">Nöbet planını yalnızca görüntülemek değil, daha şeffaf ve daha yönetilebilir hale getirmek için tasarlandı.</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="hero-box">
+            <div class="hero-badge">Akıllı kontrol paneli</div>
+            <div class="hero-headline">
+                Nöbet planı hazır. <span class="blue">Peki gerçekten</span> <span class="green">adil mi?</span>
+            </div>
+            <div class="hero-text">
+                AYÇA ile nöbet dağılımını tarih, grup ve eczane bazında izleyebilir; gün dengesi, dağılım görünümü ve özet tabloları tek ekranda takip edebilirsin.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# ==============================
+# ÜST ALAN
+# ==============================
+render_header()
 
 file = st.file_uploader("Excel dosyasını yükleyin", type=["xlsx"])
 
@@ -86,179 +381,187 @@ if not file:
 
 df, genel = load_excel(file)
 
-menu = st.sidebar.radio("Menü", [
-    "Genel Özet",
-    "Tarih Seç",
-    "Aylık Takvim",
-    "Grup Analizi",
-    "Eczane Analizi"
-])
+if df.empty:
+    st.error("Excel dosyasında okunabilir nöbet verisi bulunamadı.")
+    st.stop()
 
+# ==============================
+# SIDEBAR
+# ==============================
+st.sidebar.markdown("## AYÇA Paneli")
+st.sidebar.caption("Akıllı Yazılım Çözüm Asistanı")
+
+menu = st.sidebar.radio(
+    "Menü",
+    [
+        "Genel Özet",
+        "Tarih Seç",
+        "Aylık Takvim",
+        "Grup Analizi",
+        "Eczane Analizi"
+    ]
+)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown(
+    """
+    <div class="small-note">
+    Bu panel; nöbet dağılımını daha anlaşılır, daha düzenli ve daha kurumsal şekilde takip etmeniz için düzenlenmiştir.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# ==============================
 # GENEL ÖZET
+# ==============================
 if menu == "Genel Özet":
+    toplam_nobet = len(df)
+    toplam_eczane = df["Eczane"].nunique()
+    toplam_ay = df["Ay"].nunique()
+    ortalama_nobet = round(toplam_nobet / toplam_eczane, 2) if toplam_eczane else 0
 
-    col1, col2, col3, col4 = st.columns(4)
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        show_metric_card("Toplam Nöbet", toplam_nobet)
+    with c2:
+        show_metric_card("Toplam Eczane", toplam_eczane)
+    with c3:
+        show_metric_card("Toplam Ay", toplam_ay)
+    with c4:
+        show_metric_card("Ortalama Nöbet", ortalama_nobet)
 
-    col1.metric("Toplam Nöbet", len(df))
-    col2.metric("Toplam Eczane", df["Eczane"].nunique())
-    col3.metric("Toplam Ay", df["Ay"].nunique())
-    col4.metric("Ortalama Nöbet", round(len(df) / df["Eczane"].nunique(), 2))
-
-    st.subheader("Gün Dağılımı")
+    st.markdown('<div class="section-title">Gün Dağılımı</div>', unsafe_allow_html=True)
 
     gun_sayim = df["Gün"].value_counts().reset_index()
     gun_sayim.columns = ["Gün", "Sayı"]
+
+    gun_sira = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
+    gun_sayim["Gün"] = pd.Categorical(gun_sayim["Gün"], categories=gun_sira, ordered=True)
+    gun_sayim = gun_sayim.sort_values("Gün")
 
     fig = px.pie(
         gun_sayim,
         names="Gün",
         values="Sayı",
-        hole=0.4
+        hole=0.55,
+        color="Gün",
+        color_discrete_sequence=[
+            "#1f4b99", "#2e6bdb", "#4d8af0", "#7bb0ff", "#22a06b", "#49c38a", "#9edcbf"
+        ]
     )
-
+    fig.update_traces(textposition="inside", textinfo="percent+label")
+    fig.update_layout(
+        margin=dict(l=10, r=10, t=10, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        legend_title_text=""
+    )
     st.plotly_chart(fig, use_container_width=True)
 
-    st.divider()
+    st.markdown('<div class="section-title">Özet Tablo</div>', unsafe_allow_html=True)
 
-    st.subheader("Özet Tablo")
+    ozet, _ = prepare_ozet_table(df, genel)
+    st.dataframe(ozet, use_container_width=True, height=500)
 
-    gun_pivot = pd.pivot_table(
-        df,
-        index=["Eczane","Grup"],
-        columns="Gün",
-        aggfunc="size",
-        fill_value=0
-    ).reset_index()
-
-    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
-
-    mevcut_gunler = [g for g in gun_sira if g in gun_pivot.columns]
-
-    gun_pivot = gun_pivot[["Eczane","Grup"] + mevcut_gunler]
-
-    ozet = genel.merge(gun_pivot, on=["Eczane","Grup"], how="left")
-
-    for g in gun_sira:
-        if g in ozet.columns:
-            ozet[g] = ozet[g].fillna(0)
-
-    ozet = ozet[
-        [
-            "Eczane",
-            "Grup",
-            "Geçmiş Katsayı",
-            "Geçmiş Bayram",
-            "Toplam Katsayı",
-            "Bayram"
-        ] + mevcut_gunler
-    ]
-
-    st.dataframe(ozet, use_container_width=True)
-
-
+# ==============================
 # TARİH SEÇ
+# ==============================
 elif menu == "Tarih Seç":
-
     min_tarih = df["Tarih"].min().date()
     max_tarih = df["Tarih"].max().date()
 
-    # Tarih widget
-    tarih = st.date_input(
-        "Tarih seçin",
-        value=min_tarih,
-        min_value=min_tarih,
-        max_value=max_tarih
-    )
+    col1, col2 = st.columns([1, 2])
 
-    # Eğer tarih pandas.Timestamp ise .date() ile datetime.date dönüştür
+    with col1:
+        tarih = st.date_input(
+            "Tarih seçin",
+            value=min_tarih,
+            min_value=min_tarih,
+            max_value=max_tarih
+        )
+
     if hasattr(tarih, "to_pydatetime"):
         secilen_tarih = tarih.to_pydatetime().date()
     else:
         secilen_tarih = tarih
 
-    # Seçilen tarihe göre filtrele
-    sonuc = df[df["Tarih"].dt.date == secilen_tarih]
+    sonuc = df[df["Tarih"].dt.date == secilen_tarih].copy()
+    sonuc = sonuc.sort_values(["Grup", "Eczane"])
 
-    st.subheader(f"Seçilen Tarih: {secilen_tarih.day} {aylar_tr[secilen_tarih.month]} {secilen_tarih.year}")
-    st.dataframe(sonuc.sort_values("Tarih"), use_container_width=True)
+    with col2:
+        st.markdown(
+            f"""
+            <div class="card">
+                <div class="card-title">Seçilen Tarih</div>
+                <div class="card-desc" style="font-size:1.15rem;">
+                    {secilen_tarih.day} {aylar_tr[secilen_tarih.month]} {secilen_tarih.year}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
+    st.markdown('<div class="section-title">O gün nöbetçi olan eczaneler</div>', unsafe_allow_html=True)
 
+    if sonuc.empty:
+        st.warning("Seçilen tarihte kayıt bulunamadı.")
+    else:
+        st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Eczane"]], use_container_width=True, height=450)
 
+# ==============================
 # AYLIK TAKVİM
+# ==============================
 elif menu == "Aylık Takvim":
+    ay = st.selectbox("Ay seç", sorted(df["Ay"].unique()))
+    sonuc = df[df["Ay"] == ay].copy()
 
-    ay = st.selectbox(
-        "Ay seç",
-        sorted(df["Ay"].unique())
-    )
-
-    sonuc = df[df["Ay"] == ay]
-
-    pivot = sonuc.pivot(
-        index="Tarih",
-        columns="Grup",
-        values="Eczane"
-    )
-
+    pivot = sonuc.pivot(index="Tarih", columns="Grup", values="Eczane")
     pivot = pivot.fillna("")
+
+    st.markdown('<div class="section-title">Aylık nöbet takvimi</div>', unsafe_allow_html=True)
 
     def highlight_cells(val):
         if val == "":
-            return "background-color: #eeeeee"
-        else:
-            return "background-color: #d4edda"
+            return "background-color: #f1f4f8; color: #9aa6b2;"
+        return "background-color: #ecf8f0; color: #1b2430;"
 
     styled = pivot.style.applymap(highlight_cells)
+    st.dataframe(styled, use_container_width=True, height=600)
 
-    st.dataframe(styled, use_container_width=True)
-
-
+# ==============================
 # GRUP ANALİZİ
+# ==============================
 elif menu == "Grup Analizi":
+    if genel is not None and "Grup" in genel.columns:
+        grup_listesi = sorted(genel["Grup"].dropna().unique())
+    else:
+        grup_listesi = sorted(df["Grup"].dropna().unique())
 
-    st.subheader("Grup Görünümü")
+    st.markdown('<div class="section-title">Grup görünümü</div>', unsafe_allow_html=True)
+    grup = st.selectbox("Grup seç", grup_listesi)
 
-    grup = st.selectbox(
-        "Grup seç",
-        sorted(genel["Grup"].unique())
+    ozet, gun_sira = prepare_ozet_table(df, genel)
+    grup_ozet = ozet[ozet["Grup"] == grup].copy()
+
+    st.markdown(
+        f"""
+        <div class="card" style="margin-bottom:12px;">
+            <div class="card-title">{grup} grubu eczaneleri</div>
+            <div class="card-desc">Bu alanda ilgili grubun geçmiş ve gün bazlı nöbet dağılımını toplu olarak görebilirsin.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    # Gün pivot oluştur
-    gun_pivot = pd.pivot_table(
-        df,
-        index=["Eczane","Grup"],
-        columns="Gün",
-        aggfunc="size",
-        fill_value=0
-    ).reset_index()
+    st.dataframe(grup_ozet, use_container_width=True, height=400)
 
-    gun_sira = ["Pzt","Salı","Çarş","Perş","Cuma","Ctesi","Pazar"]
+    st.markdown('<div class="section-title">Grup günlere göre nöbet dağılımı</div>', unsafe_allow_html=True)
 
-    mevcut_gunler = [g for g in gun_sira if g in gun_pivot.columns]
-
-    gun_pivot = gun_pivot[["Eczane","Grup"] + mevcut_gunler]
-
-    ozet = genel.merge(gun_pivot, on=["Eczane","Grup"], how="left")
-
-    for g in gun_sira:
-        if g in ozet.columns:
-            ozet[g] = ozet[g].fillna(0)
-
-    grup_ozet = ozet[ozet["Grup"] == grup]
-
-    st.subheader(f"{grup} Eczaneleri")
-
-    st.dataframe(grup_ozet, use_container_width=True)
-
-    st.divider()
-
-    st.subheader("Grup Günlere Göre Nöbet Dağılımı")
-
-    sonuc = df[df["Grup"] == grup]
+    sonuc = df[df["Grup"] == grup].copy()
 
     sayim = (
-        sonuc
-        .groupby(["Gün","Eczane"])
+        sonuc.groupby(["Gün", "Eczane"])
         .size()
         .reset_index(name="Nöbet Sayısı")
     )
@@ -268,6 +571,7 @@ elif menu == "Grup Analizi":
         categories=gun_sira,
         ordered=True
     )
+    sayim = sayim.sort_values("Gün")
 
     fig = px.bar(
         sayim,
@@ -275,47 +579,53 @@ elif menu == "Grup Analizi":
         y="Nöbet Sayısı",
         color="Eczane",
         barmode="group",
-        title=f"{grup} Günlere Göre Nöbet Dağılımı",
-        category_orders={"Gün": gun_sira}
+        category_orders={"Gün": gun_sira},
+        color_discrete_sequence=px.colors.qualitative.Set2
+    )
+    fig.update_layout(
+        margin=dict(l=10, r=10, t=30, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        legend_title_text=""
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-
+# ==============================
 # ECZANE ANALİZİ
+# ==============================
 elif menu == "Eczane Analizi":
+    st.markdown('<div class="section-title">Eczane arama</div>', unsafe_allow_html=True)
 
-    st.subheader("Eczane Arama")
-
-    # 🔎 Arama kutusu
     arama = st.text_input("Eczane adı ara")
+    eczane_listesi = sorted(df["Eczane"].dropna().unique())
 
-    eczane_listesi = sorted(df["Eczane"].unique())
-
-    # Arama varsa filtrele
     if arama:
-        eczane_listesi = [
-            e for e in eczane_listesi
-            if arama.lower() in e.lower()
-        ]
+        eczane_listesi = [e for e in eczane_listesi if arama.lower() in e.lower()]
 
-    # Scroll + seçim
-    eczane = st.selectbox(
-        "Eczane seç",
-        eczane_listesi
-    )
+    if not eczane_listesi:
+        st.warning("Arama kriterine uygun eczane bulunamadı.")
+        st.stop()
 
-    sonuc = df[df["Eczane"] == eczane]
+    eczane = st.selectbox("Eczane seç", eczane_listesi)
+    sonuc = df[df["Eczane"] == eczane].copy().sort_values("Tarih")
 
-    st.metric("Toplam Nöbet", len(sonuc))
+    c1, c2 = st.columns([1, 2])
 
-    st.dataframe(
-        sonuc.sort_values("Tarih"),
-        use_container_width=True
-    )
+    with c1:
+        show_metric_card("Toplam Nöbet", len(sonuc))
 
-    sonuc = df[df["Eczane"] == eczane]
+    with c2:
+        grup_bilgisi = sonuc["Grup"].iloc[0] if not sonuc.empty else "-"
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-label">Grup</div>
+                <div class="metric-value" style="font-size:1.5rem;">{grup_bilgisi}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    st.metric("Toplam Nöbet", len(sonuc))
-
-    st.dataframe(sonuc.sort_values("Tarih"))
+    st.markdown('<div class="section-title">Eczane nöbet geçmişi</div>', unsafe_allow_html=True)
+    st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Ay"]], use_container_width=True, height=450)
