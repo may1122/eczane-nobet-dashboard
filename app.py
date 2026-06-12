@@ -636,17 +636,55 @@ def prepare_ozet_table(df, genel):
         fill_value=0
     ).reset_index()
 
-    mevcut_gunler = [g for g in gun_sira if g in gun_pivot.columns]
-    gun_pivot = gun_pivot[["Eczane", "Grup"] + mevcut_gunler]
+    # Gün isimleri farklı gelirse yine de kırılmasın.
+    gun_alias = {
+        "Pazartesi": "Pzt",
+        "Pzt": "Pzt",
+        "Salı": "Salı",
+        "Sali": "Salı",
+        "Çarşamba": "Çarş",
+        "Çarş": "Çarş",
+        "Carsamba": "Çarş",
+        "Perşembe": "Perş",
+        "Perş": "Perş",
+        "Persembe": "Perş",
+        "Cuma": "Cuma",
+        "Cumartesi": "Ctesi",
+        "Ctesi": "Ctesi",
+        "Pazar": "Pazar",
+    }
+
+    gun_pivot = gun_pivot.rename(columns={c: gun_alias.get(str(c), c) for c in gun_pivot.columns})
+
+    # Aynı güne denk gelen olası duplicate kolonları birleştir.
+    for g in gun_sira:
+        same_cols = [c for c in gun_pivot.columns if c == g]
+        if len(same_cols) > 1:
+            gun_pivot[g] = gun_pivot[same_cols].sum(axis=1)
+
+    keep_cols = ["Eczane", "Grup"] + [g for g in gun_sira if g in gun_pivot.columns]
+    gun_pivot = gun_pivot.loc[:, ~gun_pivot.columns.duplicated()].copy()
+    gun_pivot = gun_pivot[[c for c in keep_cols if c in gun_pivot.columns]]
 
     if genel is not None and {"Eczane", "Grup"}.issubset(genel.columns):
-        ozet = genel.merge(gun_pivot, on=["Eczane", "Grup"], how="left")
+        ozet = genel.merge(gun_pivot, on=["Eczane", "Grup"], how="left", suffixes=("_genel", ""))
     else:
         ozet = gun_pivot.copy()
 
+    # Merge sonrası oluşabilecek _genel / _x / _y kolon karmaşasını temizle.
     for g in gun_sira:
-        if g in ozet.columns:
-            ozet[g] = ozet[g].fillna(0)
+        candidates = [
+            g,
+            f"{g}_y",
+            f"{g}_x",
+            f"{g}_genel",
+        ]
+        found = [c for c in candidates if c in ozet.columns]
+
+        if found:
+            ozet[g] = ozet[found].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1)
+        else:
+            ozet[g] = 0
 
     sabit_kolonlar = [
         "Eczane",
@@ -656,8 +694,18 @@ def prepare_ozet_table(df, genel):
         "Toplam Katsayı",
         "Bayram"
     ]
+
     mevcut_sabitler = [c for c in sabit_kolonlar if c in ozet.columns]
-    ozet = ozet[mevcut_sabitler + mevcut_gunler]
+
+    # KeyError oluşmaması için sadece gerçekten var olan kolonları al.
+    final_cols = mevcut_sabitler + gun_sira
+    final_cols = [c for c in final_cols if c in ozet.columns]
+
+    ozet = ozet[final_cols].copy()
+
+    for g in gun_sira:
+        if g in ozet.columns:
+            ozet[g] = pd.to_numeric(ozet[g], errors="coerce").fillna(0).astype(int)
 
     return ozet, gun_sira
 
