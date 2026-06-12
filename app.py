@@ -244,6 +244,25 @@ div[data-testid="metric-container"] label {
 .stDateInput > div > div input {
     border-radius: 12px !important;
 }
+
+.chip-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 8px;
+}
+
+.mini-chip {
+    display: inline-block;
+    background: #eef4ff;
+    color: #1f4b99;
+    border: 1px solid #d6e4ff;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -342,6 +361,36 @@ def load_detayli_rapor(file):
     }
 
 
+def _safe_cell_text(value):
+    if pd.isna(value):
+        return ""
+    return str(value).strip()
+
+
+def _render_list_card(title, count, names_text):
+    names_text = _safe_cell_text(names_text)
+    if not names_text:
+        names_html = '<div class="card-desc">Kayıt yok.</div>'
+    else:
+        names = [x.strip() for x in names_text.split(",") if x.strip()]
+        if names:
+            chips = "".join([f'<span class="mini-chip">{name}</span>' for name in names])
+            names_html = f'<div class="chip-wrap">{chips}</div>'
+        else:
+            names_html = '<div class="card-desc">Kayıt yok.</div>'
+
+    st.markdown(
+        f"""
+        <div class="card" style="margin-bottom:12px; min-height:150px;">
+            <div class="card-title">{title}</div>
+            <div class="metric-value" style="font-size:2.1rem; margin-bottom:10px;">{count}</div>
+            {names_html}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 def render_detayli_rapor():
     st.markdown('<div class="section-title">Detaylı Rapor</div>', unsafe_allow_html=True)
     st.markdown(
@@ -367,108 +416,85 @@ def render_detayli_rapor():
         return
 
     rapor = load_detayli_rapor(detay_file)
-    aylik_detay = rapor["aylik_detay"]
     periyot = rapor["periyot_ozet"]
-    debug = rapor["debug_ozet"]
     sifir = rapor["aylik_sifir"]
     iki_plus = rapor["aylik_iki_plus"]
 
-    if periyot.empty and debug.empty and aylik_detay.empty:
+    if periyot.empty and sifir.empty and iki_plus.empty:
         st.error("Bu dosyada beklenen detay rapor sekmeleri bulunamadı.")
         return
 
-    # Üst metrikler
-    toplam_eczane = periyot["Eczane"].nunique() if not periyot.empty and "Eczane" in periyot.columns else 0
-    toplam_hafta_ici = int(periyot["Hafta İçi"].sum()) if not periyot.empty and "Hafta İçi" in periyot.columns else 0
-    toplam_hafta_sonu = int(periyot["Hafta Sonu"].sum()) if not periyot.empty and "Hafta Sonu" in periyot.columns else 0
-    ort_hafta_sonu = round(periyot["Hafta Sonu Oranı"].mean() * 100, 1) if not periyot.empty and "Hafta Sonu Oranı" in periyot.columns else 0
-
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        show_metric_card("Eczane", toplam_eczane)
-    with c2:
-        show_metric_card("Hafta İçi", toplam_hafta_ici)
-    with c3:
-        show_metric_card("Hafta Sonu", toplam_hafta_sonu)
-    with c4:
-        show_metric_card("Ort. Hafta Sonu %", ort_hafta_sonu)
-
-    # Ay seçimi: sadece 0/2+ listeleri ve debug için kullanılır.
+    # Ay seçimi kartları filtrelemek için kullanılır.
     ay_options = []
-    if not sifir.empty and {"Yıl", "Ay"}.issubset(sifir.columns):
-        ay_options = sorted(sifir[["Yıl", "Ay"]].drop_duplicates().apply(lambda r: f"{int(r['Yıl'])}-{int(r['Ay']):02d}", axis=1).tolist())
-    elif not debug.empty and {"Yıl", "Ay"}.issubset(debug.columns):
-        ay_options = sorted(debug[["Yıl", "Ay"]].drop_duplicates().apply(lambda r: f"{int(r['Yıl'])}-{int(r['Ay']):02d}", axis=1).tolist())
+    for kaynak in [sifir, iki_plus]:
+        if not kaynak.empty and {"Yıl", "Ay"}.issubset(kaynak.columns):
+            ay_options += kaynak[["Yıl", "Ay"]].drop_duplicates().apply(
+                lambda r: f"{int(r['Yıl'])}-{int(r['Ay']):02d}", axis=1
+            ).tolist()
 
-    secili_ay = None
+    ay_options = sorted(set(ay_options))
+    secili_yil, secili_ay_no = None, None
+
     if ay_options:
         secili_ay = st.selectbox("Ay seç", ay_options)
         secili_yil, secili_ay_no = map(int, secili_ay.split("-"))
+
+    # PERIYOT OZET
+    st.markdown('<div class="section-title">Periyodik Özet</div>', unsafe_allow_html=True)
+
+    if not periyot.empty:
+        kolonlar = [
+            "Eczane", "Grup", "Periyot Toplam Katsayı", "Periyot Bayram",
+            "Hafta İçi", "Hafta Sonu", "Hafta Sonu Oranı",
+            "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar", "Arefe"
+        ]
+        mevcut_kolonlar = [c for c in kolonlar if c in periyot.columns]
+        st.dataframe(periyot[mevcut_kolonlar], use_container_width=True, height=420)
     else:
-        secili_yil, secili_ay_no = None, None
+        st.info("PERIYOT OZET sekmesi bulunamadı.")
 
-    st.markdown('<div class="section-title">Hafta İçi / Hafta Sonu Karşılaştırması</div>', unsafe_allow_html=True)
-
-    if not periyot.empty and {"Eczane", "Hafta İçi", "Hafta Sonu"}.issubset(periyot.columns):
-        grafik_df = periyot[["Eczane", "Hafta İçi", "Hafta Sonu"]].copy()
-        grafik_df = grafik_df.sort_values(["Hafta Sonu", "Hafta İçi"], ascending=False).head(30)
-
-        fig = px.bar(
-            grafik_df,
-            x="Eczane",
-            y=["Hafta İçi", "Hafta Sonu"],
-            barmode="group"
-        )
-        fig.update_layout(
-            margin=dict(l=10, r=10, t=30, b=10),
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            legend_title_text=""
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("PERIYOT OZET sekmesinde hafta içi / hafta sonu kolonları bulunamadı.")
-
-    st.markdown('<div class="section-title">Aylık Kritik Listeler</div>', unsafe_allow_html=True)
+    # AYLIK 0 / 2+ KARTLARI
+    st.markdown('<div class="section-title">Aylık Kritik Kartlar</div>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### 0 Nöbet Kalanlar")
+        st.markdown("### Aylık 0 Nöbet")
         if not sifir.empty:
             view = sifir.copy()
             if secili_yil is not None and {"Yıl", "Ay"}.issubset(view.columns):
                 view = view[(view["Yıl"] == secili_yil) & (view["Ay"] == secili_ay_no)]
-            st.dataframe(view, use_container_width=True, height=220)
+
+            if view.empty:
+                st.info("Seçilen ay için 0 nöbet kaydı yok.")
+            else:
+                for _, row in view.iterrows():
+                    yil = int(row["Yıl"]) if "Yıl" in row and pd.notna(row["Yıl"]) else ""
+                    ay = int(row["Ay"]) if "Ay" in row and pd.notna(row["Ay"]) else ""
+                    count = row.get("0 Nöbet Sayısı", 0)
+                    names = row.get("0 Nöbet Kalanlar", "")
+                    _render_list_card(f"{yil}-{ay:02d}", count, names)
         else:
             st.info("AYLIK 0 NOBET sekmesi bulunamadı.")
 
     with col2:
-        st.markdown("### 2+ Nöbet Alanlar")
+        st.markdown("### Aylık 2+ Nöbet")
         if not iki_plus.empty:
             view = iki_plus.copy()
             if secili_yil is not None and {"Yıl", "Ay"}.issubset(view.columns):
                 view = view[(view["Yıl"] == secili_yil) & (view["Ay"] == secili_ay_no)]
-            st.dataframe(view, use_container_width=True, height=220)
+
+            if view.empty:
+                st.info("Seçilen ay için 2+ nöbet kaydı yok.")
+            else:
+                for _, row in view.iterrows():
+                    yil = int(row["Yıl"]) if "Yıl" in row and pd.notna(row["Yıl"]) else ""
+                    ay = int(row["Ay"]) if "Ay" in row and pd.notna(row["Ay"]) else ""
+                    count = row.get("2+ Nöbet Sayısı", 0)
+                    names = row.get("2+ Nöbet Alanlar", "")
+                    _render_list_card(f"{yil}-{ay:02d}", count, names)
         else:
             st.info("AYLIK 2+ NOBET sekmesi bulunamadı.")
-
-    st.markdown('<div class="section-title">Grup Bazlı Kısa Özet</div>', unsafe_allow_html=True)
-    if not debug.empty:
-        debug_view = debug.copy()
-        if secili_yil is not None and {"Yıl", "Ay"}.issubset(debug_view.columns):
-            debug_view = debug_view[(debug_view["Yıl"] == secili_yil) & (debug_view["Ay"] == secili_ay_no)]
-
-        g_cols = [c for c in ["Yıl", "Ay", "Grup", "Aktif Eczane", "0 Nöbet Sayısı", "2+ Nöbet Sayısı"] if c in debug_view.columns]
-        st.dataframe(debug_view[g_cols], use_container_width=True, height=300)
-    else:
-        st.info("DEBUG OZET sekmesi bulunamadı.")
-
-    with st.expander("Eczane bazlı aylık detay tablosu"):
-        if not aylik_detay.empty:
-            st.dataframe(aylik_detay, use_container_width=True, height=400)
-        else:
-            st.info("AYLIK DETAY sekmesi bulunamadı.")
 
 def prepare_ozet_table(df, genel):
     gun_sira = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
