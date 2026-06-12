@@ -286,7 +286,14 @@ def load_excel(file):
                 "Geçmiş Katsayı",
                 "Geçmiş Bayram",
                 "Toplam Katsayı",
-                "Bayram"
+                "Bayram",
+                "Pzt",
+                "Salı",
+                "Çarş",
+                "Perş",
+                "Cuma",
+                "Ctesi",
+                "Pazar"
             ]
             mevcut_genel_cols = [c for c in genel_cols if c in df_sheet.columns]
             if len(mevcut_genel_cols) >= 2:
@@ -399,11 +406,13 @@ def _split_names_text(names_text):
 
 
 def _render_group_list(group_name, names):
-    # Boş grup varsa ekranda hiçbir şey gösterme.
-    if not names:
+    temiz_names = [str(name).strip() for name in names if str(name).strip()]
+
+    # Boş grup hiç gösterilmez.
+    if not temiz_names:
         return
 
-    chips = "".join([f'<span class="mini-chip">{name}</span>' for name in names])
+    chips = "".join([f'<span class="mini-chip">{name}</span>' for name in temiz_names])
 
     st.markdown(
         f"""
@@ -440,15 +449,10 @@ def _render_grouped_debug_card(title, debug_df, year, month, list_column, count_
     view = view.sort_values("Grup")
     for _, row in view.iterrows():
         names = _split_names_text(row.get(list_column, ""))
+        temiz_names = [str(name).strip() for name in names if str(name).strip()]
 
-        temiz_names = [
-            n.strip()
-            for n in names
-            if str(n).strip()
-        ]
-
-        # 0 eczane olan grupları hiç gösterme.
-        if len(temiz_names) == 0:
+        # 0 kayıtlı gruplar ekranda hiç görünmez.
+        if not temiz_names:
             continue
 
         group_name = row.get("Grup", "-")
@@ -461,52 +465,44 @@ def render_genel_hafta_ici_sonu(df, genel):
     st.markdown(
         """
         <div class="card" style="margin-bottom:14px;">
-            <div class="card-title">Eczane bazlı hafta içi / hafta sonu özeti</div>
+            <div class="card-title">Eczane bazlı hafta içi / hafta sonu dağılımı</div>
             <div class="card-desc">
-                Bu alan, ana Excel dosyasındaki GENEL OZET verisinden Pazartesi-Salı-Çarşamba-Perşembe-Cuma
-                sütunlarını hafta içi; Cumartesi-Pazar sütunlarını hafta sonu olarak toplar.
+                Bu alan ilk yüklenen ana nöbet Excel dosyasındaki GENEL OZET sayfasından hesaplanır.
+                Hafta içi = Pzt + Salı + Çarş + Perş + Cuma, hafta sonu = Ctesi + Pazar.
             </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    ozet, _ = prepare_ozet_table(df, genel)
+    if genel is not None and {"Eczane", "Grup"}.issubset(genel.columns):
+        kaynak = genel.copy()
+    else:
+        kaynak, _ = prepare_ozet_table(df, genel)
 
-    gun_kolon_map = {
-        "Pzt": ["Pzt", "Pazartesi"],
-        "Salı": ["Salı", "Sali"],
-        "Çarş": ["Çarş", "Çarşamba", "Cars", "Carsamba"],
-        "Perş": ["Perş", "Perşembe", "Pers", "Persembe"],
-        "Cuma": ["Cuma"],
-        "Ctesi": ["Ctesi", "Cumartesi"],
-        "Pazar": ["Pazar"],
-    }
+    gun_kolonlari = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
+    for col in gun_kolonlari:
+        if col not in kaynak.columns:
+            kaynak[col] = 0
+        kaynak[col] = pd.to_numeric(kaynak[col], errors="coerce").fillna(0).astype(int)
 
-    # Eksik gün kolonu varsa 0 kabul edilir.
-    for standart_kolon, alternatifler in gun_kolon_map.items():
-        if standart_kolon not in ozet.columns:
-            bulunan = next((c for c in alternatifler if c in ozet.columns), None)
-            if bulunan is not None:
-                ozet[standart_kolon] = pd.to_numeric(ozet[bulunan], errors="coerce").fillna(0)
-            else:
-                ozet[standart_kolon] = 0
-        else:
-            ozet[standart_kolon] = pd.to_numeric(ozet[standart_kolon], errors="coerce").fillna(0)
+    kaynak["Hafta İçi"] = (
+        kaynak["Pzt"] +
+        kaynak["Salı"] +
+        kaynak["Çarş"] +
+        kaynak["Perş"] +
+        kaynak["Cuma"]
+    )
 
-    hafta_ici_kolonlar = ["Pzt", "Salı", "Çarş", "Perş", "Cuma"]
-    hafta_sonu_kolonlar = ["Ctesi", "Pazar"]
-
-    ozet["Hafta İçi"] = ozet[hafta_ici_kolonlar].sum(axis=1).astype(int)
-    ozet["Hafta Sonu"] = ozet[hafta_sonu_kolonlar].sum(axis=1).astype(int)
-    ozet["Toplam"] = ozet["Hafta İçi"] + ozet["Hafta Sonu"]
-    ozet["Hafta Sonu Oranı"] = ozet.apply(
-        lambda r: round((r["Hafta Sonu"] / r["Toplam"]) * 100, 2) if r["Toplam"] else 0,
+    kaynak["Hafta Sonu"] = kaynak["Ctesi"] + kaynak["Pazar"]
+    kaynak["Toplam"] = kaynak["Hafta İçi"] + kaynak["Hafta Sonu"]
+    kaynak["Hafta Sonu Oranı"] = kaynak.apply(
+        lambda r: round(r["Hafta Sonu"] / r["Toplam"], 4) if r["Toplam"] else 0,
         axis=1
     )
 
-    toplam_hafta_ici = int(ozet["Hafta İçi"].sum())
-    toplam_hafta_sonu = int(ozet["Hafta Sonu"].sum())
+    toplam_hafta_ici = int(kaynak["Hafta İçi"].sum())
+    toplam_hafta_sonu = int(kaynak["Hafta Sonu"].sum())
     toplam = toplam_hafta_ici + toplam_hafta_sonu
     hafta_sonu_orani = round((toplam_hafta_sonu / toplam) * 100, 2) if toplam else 0
 
@@ -518,22 +514,21 @@ def render_genel_hafta_ici_sonu(df, genel):
     with c3:
         show_metric_card("Hafta Sonu Oranı", f"%{hafta_sonu_orani}")
 
-    st.markdown('<div class="section-title">Eczane Bazlı Dağılım</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Eczane Bazlı Liste</div>', unsafe_allow_html=True)
 
-    temel_kolonlar = ["Eczane", "Grup"]
-    mevcut_temel = [c for c in temel_kolonlar if c in ozet.columns]
+    goster_kolonlari = [
+        "Eczane",
+        "Grup",
+        "Hafta İçi",
+        "Hafta Sonu",
+        "Toplam",
+        "Hafta Sonu Oranı"
+    ]
+    goster_kolonlari = [c for c in goster_kolonlari if c in kaynak.columns]
 
-    gosterilecek_kolonlar = (
-        mevcut_temel +
-        ["Hafta İçi", "Hafta Sonu", "Toplam", "Hafta Sonu Oranı"] +
-        hafta_ici_kolonlar + hafta_sonu_kolonlar
-    )
-
-    goster = ozet[gosterilecek_kolonlar].copy()
-    goster = goster.sort_values(
-        ["Hafta Sonu", "Hafta İçi"],
-        ascending=[False, False]
-    )
+    goster = kaynak[goster_kolonlari].copy()
+    if {"Hafta Sonu", "Hafta İçi"}.issubset(goster.columns):
+        goster = goster.sort_values(["Hafta Sonu", "Hafta İçi"], ascending=[False, False])
 
     st.dataframe(goster, use_container_width=True, height=620)
 
@@ -705,10 +700,42 @@ else:
 # ==============================
 render_header()
 
-file = st.file_uploader("Excel dosyasını yükleyin", type=["xlsx"])
+# ==============================
+# ANA BÖLÜM SEÇİMİ
+# ==============================
+st.sidebar.markdown("### Bölüm")
+ana_bolum = st.sidebar.radio(
+    "",
+    [
+        "Ana Panel",
+        "Detaylı Rapor"
+    ]
+)
+
+st.sidebar.markdown("---")
+
+# ==============================
+# DETAYLI RAPOR ANA BÖLÜMÜ
+# ==============================
+if ana_bolum == "Detaylı Rapor":
+    st.sidebar.markdown(
+        """
+        <div class="small-note">
+        Detaylı rapor alanı ayrı Excel ile çalışır. Ana nöbet planı Excel'i yüklemenize gerek yoktur.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    render_detayli_rapor()
+    st.stop()
+
+# ==============================
+# ANA PANEL DOSYA YÜKLEME
+# ==============================
+file = st.file_uploader("Ana nöbet planı Excel dosyasını yükleyin", type=["xlsx"])
 
 if not file:
-    st.info("Başlamak için Excel dosyasını yükleyin.")
+    st.info("Başlamak için ana nöbet planı Excel dosyasını yükleyin.")
     st.stop()
 
 df, genel = load_excel(file)
@@ -718,9 +745,9 @@ if df.empty:
     st.stop()
 
 # ==============================
-# SIDEBAR
+# ANA PANEL MENÜ
 # ==============================
-st.sidebar.markdown("### Menü")
+st.sidebar.markdown("### Ana Panel Menü")
 
 menu = st.sidebar.radio(
     "",
@@ -730,8 +757,7 @@ menu = st.sidebar.radio(
         "Aylık Takvim",
         "Grup Analizi",
         "Eczane Analizi",
-        "Genel Hafta İçi / Hafta Sonu",
-        "Detaylı Rapor"
+        "Genel Hafta İçi / Hafta Sonu"
     ]
 )
 
@@ -968,9 +994,3 @@ elif menu == "Eczane Analizi":
 # ==============================
 elif menu == "Genel Hafta İçi / Hafta Sonu":
     render_genel_hafta_ici_sonu(df, genel)
-
-# ==============================
-# DETAYLI RAPOR
-# ==============================
-elif menu == "Detaylı Rapor":
-    render_detayli_rapor()
