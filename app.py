@@ -399,10 +399,11 @@ def _split_names_text(names_text):
 
 
 def _render_group_list(group_name, names):
-    if names:
-        chips = "".join([f'<span class="mini-chip">{name}</span>' for name in names])
-    else:
-        chips = '<span class="mini-chip">Kayıt yok</span>'
+    # Boş grup varsa ekranda hiçbir şey gösterme.
+    if not names:
+        return
+
+    chips = "".join([f'<span class="mini-chip">{name}</span>' for name in names])
 
     st.markdown(
         f"""
@@ -438,11 +439,21 @@ def _render_grouped_debug_card(title, debug_df, year, month, list_column, count_
 
     view = view.sort_values("Grup")
     for _, row in view.iterrows():
-        group_name = row.get("Grup", "-")
         names = _split_names_text(row.get(list_column, ""))
-        count = int(row.get(count_column, 0)) if pd.notna(row.get(count_column, 0)) else 0
-        label = f"{group_name} — {count} eczane"
-        _render_group_list(label, names)
+
+        temiz_names = [
+            n.strip()
+            for n in names
+            if str(n).strip()
+        ]
+
+        # 0 eczane olan grupları hiç gösterme.
+        if len(temiz_names) == 0:
+            continue
+
+        group_name = row.get("Grup", "-")
+        label = f"{group_name} — {len(temiz_names)} eczane"
+        _render_group_list(label, temiz_names)
 
 
 def render_genel_hafta_ici_sonu(df):
