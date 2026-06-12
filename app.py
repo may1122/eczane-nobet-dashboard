@@ -391,6 +391,115 @@ def _render_list_card(title, count, names_text):
     )
 
 
+def _split_names_text(names_text):
+    names_text = _safe_cell_text(names_text)
+    if not names_text:
+        return []
+    return [x.strip() for x in names_text.split(",") if x.strip()]
+
+
+def _render_group_list(group_name, names):
+    if names:
+        chips = "".join([f'<span class="mini-chip">{name}</span>' for name in names])
+    else:
+        chips = '<span class="mini-chip">Kayıt yok</span>'
+
+    st.markdown(
+        f"""
+        <div style="margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #eef2f7;">
+            <div style="font-weight:800; color:#1b2430; margin-bottom:6px;">{group_name}</div>
+            <div class="chip-wrap">{chips}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def _render_grouped_debug_card(title, debug_df, year, month, list_column, count_column):
+    st.markdown(
+        f"""
+        <div class="card" style="margin-bottom:12px;">
+            <div class="card-title">{title}</div>
+            <div class="card-desc">{year}-{month:02d} ayı grup bazlı görünüm</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    required_cols = {"Yıl", "Ay", "Grup", list_column, count_column}
+    if debug_df.empty or not required_cols.issubset(debug_df.columns):
+        st.info("DEBUG OZET sekmesinde gerekli kolonlar bulunamadı.")
+        return
+
+    view = debug_df[(debug_df["Yıl"] == year) & (debug_df["Ay"] == month)].copy()
+    if view.empty:
+        st.info("Seçilen ay için grup bazlı kayıt bulunamadı.")
+        return
+
+    view = view.sort_values("Grup")
+    for _, row in view.iterrows():
+        group_name = row.get("Grup", "-")
+        names = _split_names_text(row.get(list_column, ""))
+        count = int(row.get(count_column, 0)) if pd.notna(row.get(count_column, 0)) else 0
+        label = f"{group_name} — {count} eczane"
+        _render_group_list(label, names)
+
+
+def render_genel_hafta_ici_sonu(df):
+    st.markdown('<div class="section-title">Genel Hafta İçi / Hafta Sonu</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="card" style="margin-bottom:14px;">
+            <div class="card-title">Ana plan genel dağılımı</div>
+            <div class="card-desc">
+                Bu alan ilk yüklenen ana nöbet Excel dosyasındaki günleri sayarak hafta içi ve hafta sonu nöbet toplamlarını gösterir.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    hafta_ici_gunler = ["Pzt", "Salı", "Çarş", "Perş", "Cuma"]
+    hafta_sonu_gunler = ["Ctesi", "Pazar"]
+
+    toplam_hafta_ici = int(df[df["Gün"].isin(hafta_ici_gunler)].shape[0])
+    toplam_hafta_sonu = int(df[df["Gün"].isin(hafta_sonu_gunler)].shape[0])
+    toplam = toplam_hafta_ici + toplam_hafta_sonu
+    hafta_sonu_orani = round((toplam_hafta_sonu / toplam) * 100, 2) if toplam else 0
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        show_metric_card("Toplam Hafta İçi", toplam_hafta_ici)
+    with c2:
+        show_metric_card("Toplam Hafta Sonu", toplam_hafta_sonu)
+    with c3:
+        show_metric_card("Hafta Sonu Oranı", f"%{hafta_sonu_orani}")
+
+    st.markdown('<div class="section-title">Ay Bazlı Hafta İçi / Hafta Sonu</div>', unsafe_allow_html=True)
+    aylik = df.copy()
+    aylik["Tip"] = aylik["Gün"].apply(lambda x: "Hafta Sonu" if x in hafta_sonu_gunler else "Hafta İçi")
+    aylik_ozet = (
+        aylik.groupby(["Ay", "Tip"])
+        .size()
+        .reset_index(name="Nöbet Sayısı")
+        .pivot(index="Ay", columns="Tip", values="Nöbet Sayısı")
+        .fillna(0)
+        .reset_index()
+    )
+
+    for col in ["Hafta İçi", "Hafta Sonu"]:
+        if col not in aylik_ozet.columns:
+            aylik_ozet[col] = 0
+
+    aylik_ozet["Toplam"] = aylik_ozet["Hafta İçi"] + aylik_ozet["Hafta Sonu"]
+    aylik_ozet["Hafta Sonu Oranı"] = aylik_ozet.apply(
+        lambda r: round(r["Hafta Sonu"] / r["Toplam"], 4) if r["Toplam"] else 0,
+        axis=1
+    )
+    aylik_ozet = aylik_ozet[["Ay", "Hafta İçi", "Hafta Sonu", "Toplam", "Hafta Sonu Oranı"]]
+    st.dataframe(aylik_ozet, use_container_width=True, height=360)
+
+
 def render_detayli_rapor():
     st.markdown('<div class="section-title">Detaylı Rapor</div>', unsafe_allow_html=True)
     st.markdown(
@@ -417,16 +526,17 @@ def render_detayli_rapor():
 
     rapor = load_detayli_rapor(detay_file)
     periyot = rapor["periyot_ozet"]
+    debug = rapor["debug_ozet"]
     sifir = rapor["aylik_sifir"]
     iki_plus = rapor["aylik_iki_plus"]
 
-    if periyot.empty and sifir.empty and iki_plus.empty:
+    if periyot.empty and debug.empty and sifir.empty and iki_plus.empty:
         st.error("Bu dosyada beklenen detay rapor sekmeleri bulunamadı.")
         return
 
     # Ay seçimi kartları filtrelemek için kullanılır.
     ay_options = []
-    for kaynak in [sifir, iki_plus]:
+    for kaynak in [debug, sifir, iki_plus]:
         if not kaynak.empty and {"Yıl", "Ay"}.issubset(kaynak.columns):
             ay_options += kaynak[["Yıl", "Ay"]].drop_duplicates().apply(
                 lambda r: f"{int(r['Yıl'])}-{int(r['Ay']):02d}", axis=1
@@ -453,48 +563,34 @@ def render_detayli_rapor():
     else:
         st.info("PERIYOT OZET sekmesi bulunamadı.")
 
-    # AYLIK 0 / 2+ KARTLARI
+    # AYLIK 0 / 2+ KARTLARI - DEBUG OZET grup bazlı
     st.markdown('<div class="section-title">Aylık Kritik Kartlar</div>', unsafe_allow_html=True)
+
+    if secili_yil is None:
+        st.info("Kartlar için detay raporda Yıl/Ay bilgisi bulunamadı.")
+        return
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### Aylık 0 Nöbet")
-        if not sifir.empty:
-            view = sifir.copy()
-            if secili_yil is not None and {"Yıl", "Ay"}.issubset(view.columns):
-                view = view[(view["Yıl"] == secili_yil) & (view["Ay"] == secili_ay_no)]
-
-            if view.empty:
-                st.info("Seçilen ay için 0 nöbet kaydı yok.")
-            else:
-                for _, row in view.iterrows():
-                    yil = int(row["Yıl"]) if "Yıl" in row and pd.notna(row["Yıl"]) else ""
-                    ay = int(row["Ay"]) if "Ay" in row and pd.notna(row["Ay"]) else ""
-                    count = row.get("0 Nöbet Sayısı", 0)
-                    names = row.get("0 Nöbet Kalanlar", "")
-                    _render_list_card(f"{yil}-{ay:02d}", count, names)
-        else:
-            st.info("AYLIK 0 NOBET sekmesi bulunamadı.")
+        _render_grouped_debug_card(
+            title="Aylık 0 Nöbet",
+            debug_df=debug,
+            year=secili_yil,
+            month=secili_ay_no,
+            list_column="0 Nöbetliler",
+            count_column="0 Nöbet Sayısı"
+        )
 
     with col2:
-        st.markdown("### Aylık 2+ Nöbet")
-        if not iki_plus.empty:
-            view = iki_plus.copy()
-            if secili_yil is not None and {"Yıl", "Ay"}.issubset(view.columns):
-                view = view[(view["Yıl"] == secili_yil) & (view["Ay"] == secili_ay_no)]
-
-            if view.empty:
-                st.info("Seçilen ay için 2+ nöbet kaydı yok.")
-            else:
-                for _, row in view.iterrows():
-                    yil = int(row["Yıl"]) if "Yıl" in row and pd.notna(row["Yıl"]) else ""
-                    ay = int(row["Ay"]) if "Ay" in row and pd.notna(row["Ay"]) else ""
-                    count = row.get("2+ Nöbet Sayısı", 0)
-                    names = row.get("2+ Nöbet Alanlar", "")
-                    _render_list_card(f"{yil}-{ay:02d}", count, names)
-        else:
-            st.info("AYLIK 2+ NOBET sekmesi bulunamadı.")
+        _render_grouped_debug_card(
+            title="Aylık 2+ Nöbet",
+            debug_df=debug,
+            year=secili_yil,
+            month=secili_ay_no,
+            list_column="2+ Nöbetliler",
+            count_column="2+ Nöbet Sayısı"
+        )
 
 def prepare_ozet_table(df, genel):
     gun_sira = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
@@ -596,6 +692,7 @@ menu = st.sidebar.radio(
         "Aylık Takvim",
         "Grup Analizi",
         "Eczane Analizi",
+        "Genel Hafta İçi / Hafta Sonu",
         "Detaylı Rapor"
     ]
 )
@@ -827,6 +924,12 @@ elif menu == "Eczane Analizi":
 
     st.markdown('<div class="section-title">Eczane nöbet geçmişi</div>', unsafe_allow_html=True)
     st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Ay"]], use_container_width=True, height=450)
+
+# ==============================
+# GENEL HAFTA İÇİ / HAFTA SONU
+# ==============================
+elif menu == "Genel Hafta İçi / Hafta Sonu":
+    render_genel_hafta_ici_sonu(df)
 
 # ==============================
 # DETAYLI RAPOR
