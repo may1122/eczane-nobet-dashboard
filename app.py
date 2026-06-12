@@ -456,25 +456,57 @@ def _render_grouped_debug_card(title, debug_df, year, month, list_column, count_
         _render_group_list(label, temiz_names)
 
 
-def render_genel_hafta_ici_sonu(df):
+def render_genel_hafta_ici_sonu(df, genel):
     st.markdown('<div class="section-title">Genel Hafta İçi / Hafta Sonu</div>', unsafe_allow_html=True)
     st.markdown(
         """
         <div class="card" style="margin-bottom:14px;">
-            <div class="card-title">Ana plan genel dağılımı</div>
+            <div class="card-title">Eczane bazlı hafta içi / hafta sonu özeti</div>
             <div class="card-desc">
-                Bu alan ilk yüklenen ana nöbet Excel dosyasındaki günleri sayarak hafta içi ve hafta sonu nöbet toplamlarını gösterir.
+                Bu alan, ana Excel dosyasındaki GENEL OZET verisinden Pazartesi-Salı-Çarşamba-Perşembe-Cuma
+                sütunlarını hafta içi; Cumartesi-Pazar sütunlarını hafta sonu olarak toplar.
             </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    hafta_ici_gunler = ["Pzt", "Salı", "Çarş", "Perş", "Cuma"]
-    hafta_sonu_gunler = ["Ctesi", "Pazar"]
+    ozet, _ = prepare_ozet_table(df, genel)
 
-    toplam_hafta_ici = int(df[df["Gün"].isin(hafta_ici_gunler)].shape[0])
-    toplam_hafta_sonu = int(df[df["Gün"].isin(hafta_sonu_gunler)].shape[0])
+    gun_kolon_map = {
+        "Pzt": ["Pzt", "Pazartesi"],
+        "Salı": ["Salı", "Sali"],
+        "Çarş": ["Çarş", "Çarşamba", "Cars", "Carsamba"],
+        "Perş": ["Perş", "Perşembe", "Pers", "Persembe"],
+        "Cuma": ["Cuma"],
+        "Ctesi": ["Ctesi", "Cumartesi"],
+        "Pazar": ["Pazar"],
+    }
+
+    # Eksik gün kolonu varsa 0 kabul edilir.
+    for standart_kolon, alternatifler in gun_kolon_map.items():
+        if standart_kolon not in ozet.columns:
+            bulunan = next((c for c in alternatifler if c in ozet.columns), None)
+            if bulunan is not None:
+                ozet[standart_kolon] = pd.to_numeric(ozet[bulunan], errors="coerce").fillna(0)
+            else:
+                ozet[standart_kolon] = 0
+        else:
+            ozet[standart_kolon] = pd.to_numeric(ozet[standart_kolon], errors="coerce").fillna(0)
+
+    hafta_ici_kolonlar = ["Pzt", "Salı", "Çarş", "Perş", "Cuma"]
+    hafta_sonu_kolonlar = ["Ctesi", "Pazar"]
+
+    ozet["Hafta İçi"] = ozet[hafta_ici_kolonlar].sum(axis=1).astype(int)
+    ozet["Hafta Sonu"] = ozet[hafta_sonu_kolonlar].sum(axis=1).astype(int)
+    ozet["Toplam"] = ozet["Hafta İçi"] + ozet["Hafta Sonu"]
+    ozet["Hafta Sonu Oranı"] = ozet.apply(
+        lambda r: round((r["Hafta Sonu"] / r["Toplam"]) * 100, 2) if r["Toplam"] else 0,
+        axis=1
+    )
+
+    toplam_hafta_ici = int(ozet["Hafta İçi"].sum())
+    toplam_hafta_sonu = int(ozet["Hafta Sonu"].sum())
     toplam = toplam_hafta_ici + toplam_hafta_sonu
     hafta_sonu_orani = round((toplam_hafta_sonu / toplam) * 100, 2) if toplam else 0
 
@@ -486,29 +518,24 @@ def render_genel_hafta_ici_sonu(df):
     with c3:
         show_metric_card("Hafta Sonu Oranı", f"%{hafta_sonu_orani}")
 
-    st.markdown('<div class="section-title">Ay Bazlı Hafta İçi / Hafta Sonu</div>', unsafe_allow_html=True)
-    aylik = df.copy()
-    aylik["Tip"] = aylik["Gün"].apply(lambda x: "Hafta Sonu" if x in hafta_sonu_gunler else "Hafta İçi")
-    aylik_ozet = (
-        aylik.groupby(["Ay", "Tip"])
-        .size()
-        .reset_index(name="Nöbet Sayısı")
-        .pivot(index="Ay", columns="Tip", values="Nöbet Sayısı")
-        .fillna(0)
-        .reset_index()
+    st.markdown('<div class="section-title">Eczane Bazlı Dağılım</div>', unsafe_allow_html=True)
+
+    temel_kolonlar = ["Eczane", "Grup"]
+    mevcut_temel = [c for c in temel_kolonlar if c in ozet.columns]
+
+    gosterilecek_kolonlar = (
+        mevcut_temel +
+        ["Hafta İçi", "Hafta Sonu", "Toplam", "Hafta Sonu Oranı"] +
+        hafta_ici_kolonlar + hafta_sonu_kolonlar
     )
 
-    for col in ["Hafta İçi", "Hafta Sonu"]:
-        if col not in aylik_ozet.columns:
-            aylik_ozet[col] = 0
-
-    aylik_ozet["Toplam"] = aylik_ozet["Hafta İçi"] + aylik_ozet["Hafta Sonu"]
-    aylik_ozet["Hafta Sonu Oranı"] = aylik_ozet.apply(
-        lambda r: round(r["Hafta Sonu"] / r["Toplam"], 4) if r["Toplam"] else 0,
-        axis=1
+    goster = ozet[gosterilecek_kolonlar].copy()
+    goster = goster.sort_values(
+        ["Hafta Sonu", "Hafta İçi"],
+        ascending=[False, False]
     )
-    aylik_ozet = aylik_ozet[["Ay", "Hafta İçi", "Hafta Sonu", "Toplam", "Hafta Sonu Oranı"]]
-    st.dataframe(aylik_ozet, use_container_width=True, height=360)
+
+    st.dataframe(goster, use_container_width=True, height=620)
 
 
 def render_detayli_rapor():
@@ -940,7 +967,7 @@ elif menu == "Eczane Analizi":
 # GENEL HAFTA İÇİ / HAFTA SONU
 # ==============================
 elif menu == "Genel Hafta İçi / Hafta Sonu":
-    render_genel_hafta_ici_sonu(df)
+    render_genel_hafta_ici_sonu(df, genel)
 
 # ==============================
 # DETAYLI RAPOR
