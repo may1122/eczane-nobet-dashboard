@@ -465,10 +465,10 @@ def render_genel_hafta_ici_sonu(df, genel):
     st.markdown(
         """
         <div class="card" style="margin-bottom:14px;">
-            <div class="card-title">Hafta İçi / Cumartesi / Pazar dağılımı</div>
+            <div class="card-title">Hafta içi / Cumartesi / Pazar dağılımı</div>
             <div class="card-desc">
-                Bu alan GENEL OZET verisinden çalışır. Mevcut eczane bazlı liste korunur.
-                Ek olarak seçilen grup için eczane bazlı Hafta İçi + Cumartesi + Pazar dikey stacked grafik gösterilir.
+                Bu alan GENEL OZET verisinden çalışır. Mevcut eczane bazlı görünüm korunur;
+                ek olarak hafta içi, cumartesi ve pazar bilgilerini gösteren dikey grafik eklenmiştir.
             </div>
         </div>
         """,
@@ -493,18 +493,18 @@ def render_genel_hafta_ici_sonu(df, genel):
         kaynak["Perş"] +
         kaynak["Cuma"]
     )
-    kaynak["Cumartesi"] = kaynak["Ctesi"]
-    kaynak["Pazar"] = kaynak["Pazar"]
-    kaynak["Hafta Sonu"] = kaynak["Cumartesi"] + kaynak["Pazar"]
-    kaynak["Toplam"] = kaynak["Hafta İçi"] + kaynak["Cumartesi"] + kaynak["Pazar"]
+    kaynak["Toplam Cumartesi"] = kaynak["Ctesi"]
+    kaynak["Toplam Pazar"] = kaynak["Pazar"]
+    kaynak["Hafta Sonu"] = kaynak["Toplam Cumartesi"] + kaynak["Toplam Pazar"]
+    kaynak["Toplam"] = kaynak["Hafta İçi"] + kaynak["Hafta Sonu"]
     kaynak["Hafta Sonu Oranı"] = kaynak.apply(
         lambda r: round((r["Hafta Sonu"] / r["Toplam"]) * 100, 2) if r["Toplam"] else 0,
         axis=1
     )
 
     toplam_hafta_ici = int(kaynak["Hafta İçi"].sum())
-    toplam_cumartesi = int(kaynak["Cumartesi"].sum())
-    toplam_pazar = int(kaynak["Pazar"].sum())
+    toplam_cumartesi = int(kaynak["Toplam Cumartesi"].sum())
+    toplam_pazar = int(kaynak["Toplam Pazar"].sum())
     toplam_hafta_sonu = toplam_cumartesi + toplam_pazar
     toplam = toplam_hafta_ici + toplam_hafta_sonu
     hafta_sonu_orani = round((toplam_hafta_sonu / toplam) * 100, 2) if toplam else 0
@@ -519,72 +519,102 @@ def render_genel_hafta_ici_sonu(df, genel):
     with c4:
         show_metric_card("Hafta Sonu Oranı", f"%{hafta_sonu_orani}")
 
-    # 1) İlk grup grup sekmesi kaldırıldı.
-    # 2) Tek grafik alanı bırakıldı.
-    # 3) Grafik Hafta İçi + Cumartesi + Pazar şeklinde stacked çalışır.
-    st.markdown('<div class="section-title">Dikey Grafik</div>', unsafe_allow_html=True)
+    # Grup bazlı özet: A1, A2, B1 gibi her grup ayrı toplamlanır.
+    grup_ozet = (
+        kaynak.groupby("Grup", dropna=False)
+        .agg({
+            "Eczane": "count",
+            "Hafta İçi": "sum",
+            "Toplam Cumartesi": "sum",
+            "Toplam Pazar": "sum",
+            "Hafta Sonu": "sum",
+            "Toplam": "sum"
+        })
+        .reset_index()
+        .rename(columns={"Eczane": "Eczane Sayısı"})
+    )
+    grup_ozet["Hafta Sonu Oranı"] = grup_ozet.apply(
+        lambda r: round((r["Hafta Sonu"] / r["Toplam"]) * 100, 2) if r["Toplam"] else 0,
+        axis=1
+    )
+    grup_ozet = grup_ozet.sort_values("Grup")
 
-    grup_listesi = sorted(kaynak["Grup"].dropna().unique()) if "Grup" in kaynak.columns else []
-    if not grup_listesi:
-        st.info("Grafik için grup bilgisi bulunamadı.")
-    else:
-        secili_grup = st.selectbox("Grafikte gösterilecek grup", grup_listesi)
-        grafik_df = kaynak[kaynak["Grup"] == secili_grup].copy()
-        grafik_df = grafik_df.sort_values("Eczane")
+    tab1, tab2 = st.tabs([
+        "Eczane Bazlı Liste",
+        "Dikey Grafik"
+    ])
+
+    with tab1:
+        st.markdown('<div class="section-title">Eczane Bazlı Liste</div>', unsafe_allow_html=True)
+        goster_kolonlari = [
+            "Eczane",
+            "Grup",
+            "Hafta İçi",
+            "Toplam Cumartesi",
+            "Toplam Pazar",
+            "Hafta Sonu",
+            "Toplam",
+            "Hafta Sonu Oranı"
+        ]
+        goster_kolonlari = [c for c in goster_kolonlari if c in kaynak.columns]
+        goster = kaynak[goster_kolonlari].copy()
+        goster = goster.sort_values(["Grup", "Eczane"])
+        st.dataframe(goster, use_container_width=True, height=620)
+
+    with tab2:
+        st.markdown('<div class="section-title">Dikey Grafik</div>', unsafe_allow_html=True)
+
+        grafik_modu = st.radio(
+            "Grafik görünümü",
+            ["Seçili Grup Eczaneleri", "Tüm Gruplar Özeti"],
+            horizontal=True
+        )
+
+        if grafik_modu == "Seçili Grup Eczaneleri":
+            grup_listesi = sorted(kaynak["Grup"].dropna().unique())
+            secili_grup = st.selectbox("Grafikte gösterilecek grup", grup_listesi)
+            grafik_df = kaynak[kaynak["Grup"] == secili_grup].copy()
+            grafik_df = grafik_df.sort_values("Eczane")
+            x_col = "Eczane"
+            baslik = f"{secili_grup} grubu hafta içi / cumartesi / pazar dağılımı"
+        else:
+            grafik_df = grup_ozet.copy()
+            x_col = "Grup"
+            baslik = "Tüm gruplar hafta içi / cumartesi / pazar dağılımı"
 
         grafik_long = grafik_df.melt(
-            id_vars=["Eczane"],
-            value_vars=["Hafta İçi", "Cumartesi", "Pazar"],
+            id_vars=[x_col],
+            value_vars=["Hafta İçi", "Toplam Cumartesi", "Toplam Pazar"],
             var_name="Nöbet Türü",
             value_name="Sayı"
         )
 
         fig = px.bar(
             grafik_long,
-            x="Eczane",
+            x=x_col,
             y="Sayı",
             color="Nöbet Türü",
             barmode="stack",
-            category_orders={"Nöbet Türü": ["Hafta İçi", "Cumartesi", "Pazar"]},
+            category_orders={"Nöbet Türü": ["Hafta İçi", "Toplam Cumartesi", "Toplam Pazar"]},
             color_discrete_map={
                 "Hafta İçi": "#8BC34A",
-                "Cumartesi": "#D64545",
-                "Pazar": "#2F7DD1"
+                "Toplam Cumartesi": "#D64545",
+                "Toplam Pazar": "#2F7DD1"
             },
             text="Sayı"
         )
         fig.update_traces(textposition="inside")
         fig.update_layout(
-            title=f"{secili_grup} grubu Hafta İçi / Cumartesi / Pazar dağılımı",
+            title=baslik,
             xaxis_title="",
             yaxis_title="Nöbet Sayısı",
             legend_title_text="",
-            margin=dict(l=10, r=10, t=55, b=130),
+            margin=dict(l=10, r=10, t=55, b=120),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             xaxis_tickangle=-90
         )
-        fig.update_yaxes(dtick=1)
         st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown('<div class="section-title">Eczane Bazlı Liste</div>', unsafe_allow_html=True)
-    goster_kolonlari = [
-        "Eczane",
-        "Grup",
-        "Hafta İçi",
-        "Cumartesi",
-        "Pazar",
-        "Hafta Sonu",
-        "Toplam",
-        "Hafta Sonu Oranı"
-    ]
-    goster_kolonlari = [c for c in goster_kolonlari if c in kaynak.columns]
-    goster = kaynak[goster_kolonlari].copy()
-
-    if {"Grup", "Eczane"}.issubset(goster.columns):
-        goster = goster.sort_values(["Grup", "Eczane"])
-
-    st.dataframe(goster, use_container_width=True, height=620)
 
 def render_detayli_rapor():
     st.markdown('<div class="section-title">Detaylı Rapor</div>', unsafe_allow_html=True)
