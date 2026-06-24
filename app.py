@@ -603,7 +603,14 @@ def render_genel_hafta_ici_sonu(df, genel):
             },
             text="Sayı"
         )
-        fig.update_traces(textposition="inside")
+        # V4.8: Küçük değerlerde (1-2 gibi) yazıların bazen dikey bazen yatay görünmesini engeller.
+        # Tüm bar içi etiketler yatay ve ortalı gösterilir.
+        fig.update_traces(
+            textposition="inside",
+            textangle=0,
+            insidetextanchor="middle",
+            cliponaxis=False
+        )
         fig.update_layout(
             title=baslik,
             xaxis_title="",
@@ -612,7 +619,9 @@ def render_genel_hafta_ici_sonu(df, genel):
             margin=dict(l=10, r=10, t=55, b=120),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
-            xaxis_tickangle=-90
+            xaxis_tickangle=-90,
+            uniformtext_minsize=9,
+            uniformtext_mode="show"
         )
         st.plotly_chart(fig, use_container_width=True)
 
