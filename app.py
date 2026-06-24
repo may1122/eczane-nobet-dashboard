@@ -1,4 +1,7 @@
-import osimport streamlit as stimport pandas as pdimport plotly.express as px
+import os
+import streamlit as st
+import pandas as pd
+import plotly.express as px
 
 ==============================
 
