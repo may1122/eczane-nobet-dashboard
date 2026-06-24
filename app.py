@@ -1,4 +1,7 @@
-import osimport streamlit as stimport pandas as pdimport plotly.express as px
+import os
+import streamlit as st
+import pandas as pd
+import plotly.express as px
 
 ==============================
 
@@ -263,49 +266,53 @@ EXCEL OKUMA
 
 ==============================
 
-@st.cache_datadef load_excel(file) = pd.ExcelFile(file)all_data = []genel = None
+@st.cache_datadef load_excel(file):xls = pd.ExcelFile(file)all_data = []genel = None
 
-for sheet in xls.sheet_names:df_sheet = pd.read_excel(file, sheet_name=sheet)df_sheet = df_sheet.loc[:, ~df_sheet.columns.astype(str).str.contains("^Unnamed")]
+for sheet in xls.sheet_names:
+    df_sheet = pd.read_excel(file, sheet_name=sheet)
+    df_sheet = df_sheet.loc[:, ~df_sheet.columns.astype(str).str.contains("^Unnamed")]
 
-if "GENEL" in sheet.upper():
-    genel_cols = [
-        "Eczane",
-        "Grup",
-        "Geçmiş Katsayı",
-        "Geçmiş Bayram",
-        "Toplam Katsayı",
-        "Bayram",
-        "Pzt",
-        "Salı",
-        "Çarş",
-        "Perş",
-        "Cuma",
-        "Ctesi",
-        "Pazar"
-    ]
-    mevcut_genel_cols = [c for c in genel_cols if c in df_sheet.columns]
-    if len(mevcut_genel_cols) >= 2:
-        genel = df_sheet[mevcut_genel_cols].copy()
-    continue
+    if "GENEL" in sheet.upper():
+        genel_cols = [
+            "Eczane",
+            "Grup",
+            "Geçmiş Katsayı",
+            "Geçmiş Bayram",
+            "Toplam Katsayı",
+            "Bayram",
+            "Pzt",
+            "Salı",
+            "Çarş",
+            "Perş",
+            "Cuma",
+            "Ctesi",
+            "Pazar"
+        ]
+        mevcut_genel_cols = [c for c in genel_cols if c in df_sheet.columns]
+        if len(mevcut_genel_cols) >= 2:
+            genel = df_sheet[mevcut_genel_cols].copy()
+        continue
 
-if "Tarih" not in df_sheet.columns or "Gün" not in df_sheet.columns:
-    continue
+    if "Tarih" not in df_sheet.columns or "Gün" not in df_sheet.columns:
+        continue
 
-df_long = df_sheet.melt(
-    id_vars=["Tarih", "Gün"],
-    var_name="Grup",
-    value_name="Eczane"
-)
+    df_long = df_sheet.melt(
+        id_vars=["Tarih", "Gün"],
+        var_name="Grup",
+        value_name="Eczane"
+    )
 
-df_long = df_long.dropna(subset=["Eczane"]).copy()
-df_long["Tarih"] = pd.to_datetime(df_long["Tarih"], dayfirst=True, errors="coerce")
-df_long = df_long.dropna(subset=["Tarih"]).copy()
-df_long["Ay"] = sheet
-all_data.append(df_long)
+    df_long = df_long.dropna(subset=["Eczane"]).copy()
+    df_long["Tarih"] = pd.to_datetime(df_long["Tarih"], dayfirst=True, errors="coerce")
+    df_long = df_long.dropna(subset=["Tarih"]).copy()
+    df_long["Ay"] = sheet
+    all_data.append(df_long)
 
-if not all_data:return pd.DataFrame(), genel
+if not all_data:
+    return pd.DataFrame(), genel
 
-df = pd.concat(all_data, ignore_index=True)return df, genel
+df = pd.concat(all_data, ignore_index=True)
+return df, genel
 
 ==============================
 
@@ -313,158 +320,334 @@ YARDIMCI FONKSİYONLAR
 
 ==============================
 
-def show_metric_card(label, value).markdown(f"""<div class="metric-card"><div class="metric-label">{label}</div><div class="metric-value">{value}</div></div>""",unsafe_allow_html=True)
+def show_metric_card(label, value):st.markdown(f"""<div class="metric-card"><div class="metric-label">{label}</div><div class="metric-value">{value}</div></div>""",unsafe_allow_html=True)
 
 @st.cache_datadef load_detayli_rapor(file):"""aylik_nobet_data.xlsx dosyasını okur."""xls = pd.ExcelFile(file)
 
-def read_sheet(sheet_name):if sheet_name not in xls.sheet_names:return pd.DataFrame()df_sheet = pd.read_excel(file, sheet_name=sheet_name)df_sheet = df_sheet.loc[:, ~df_sheet.columns.astype(str).str.contains("^Unnamed")]return df_sheet
+def read_sheet(sheet_name):
+    if sheet_name not in xls.sheet_names:
+        return pd.DataFrame()
+    df_sheet = pd.read_excel(file, sheet_name=sheet_name)
+    df_sheet = df_sheet.loc[:, ~df_sheet.columns.astype(str).str.contains("^Unnamed")]
+    return df_sheet
 
-aylik_detay = read_sheet("AYLIK DETAY")periyot_ozet = read_sheet("PERIYOT OZET")debug_ozet = read_sheet("DEBUG OZET")
+aylik_detay = read_sheet("AYLIK DETAY")
+periyot_ozet = read_sheet("PERIYOT OZET")
+debug_ozet = read_sheet("DEBUG OZET")
 
-Eski dosyalarda O harfiyle yazılmış olabilir; ikisini de destekle.
-
-aylik_sifir = read_sheet("AYLIK 0 NOBET")if aylik_sifir.empty:aylik_sifir = read_sheet("AYLIK O NOBET")
+# Eski dosyalarda O harfiyle yazılmış olabilir; ikisini de destekle.
+aylik_sifir = read_sheet("AYLIK 0 NOBET")
+if aylik_sifir.empty:
+    aylik_sifir = read_sheet("AYLIK O NOBET")
 
 aylik_iki_plus = read_sheet("AYLIK 2+ NOBET")
 
-return {"aylik_detay": aylik_detay,"periyot_ozet": periyot_ozet,"debug_ozet": debug_ozet,"aylik_sifir": aylik_sifir,"aylik_iki_plus": aylik_iki_plus,}
+return {
+    "aylik_detay": aylik_detay,
+    "periyot_ozet": periyot_ozet,
+    "debug_ozet": debug_ozet,
+    "aylik_sifir": aylik_sifir,
+    "aylik_iki_plus": aylik_iki_plus,
+}
 
-def _safe_cell_text(value) pd.isna(value) ""return str(value).strip()
+def _safe_cell_text(value):if pd.isna(value):return ""return str(value).strip()
 
-def _render_list_card(title, count, names_text) = _safe_cell_text(names_text)if not names_text = '<div class="card-desc">Kayıt yok.</div>'else = [x.strip() for x in names_text.split(",") if x.strip()]if names = "".join([f'<span class="mini-chip">{name}</span>' for name in names])names_html = f'<div class="chip-wrap">{chips}</div>'else = '<div class="card-desc">Kayıt yok.</div>'
+def _render_list_card(title, count, names_text):names_text = _safe_cell_text(names_text)if not names_text:names_html = '<div class="card-desc">Kayıt yok.</div>'else:names = [x.strip() for x in names_text.split(",") if x.strip()]if names:chips = "".join([f'<span class="mini-chip">{name}</span>' for name in names])names_html = f'<div class="chip-wrap">{chips}</div>'else:names_html = '<div class="card-desc">Kayıt yok.</div>'
 
-st.markdown(f"""<div class="card" style="margin-bottom:12px; min-height:150px;"><div class="card-title">{title}</div><div class="metric-value" style="font-size:2.1rem; margin-bottom:10px;">{count}</div>{names_html}</div>""",unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <div class="card" style="margin-bottom:12px; min-height:150px;">
+        <div class="card-title">{title}</div>
+        <div class="metric-value" style="font-size:2.1rem; margin-bottom:10px;">{count}</div>
+        {names_html}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-def _split_names_text(names_text) = _safe_cell_text(names_text)if not names_text []return [x.strip() for x in names_text.split(",") if x.strip()]
+def _split_names_text(names_text):names_text = _safe_cell_text(names_text)if not names_text:return []return [x.strip() for x in names_text.split(",") if x.strip()]
 
-def _render_group_list(group_name, names) = [str(name).strip() for name in names if str(name).strip()]
+def _render_group_list(group_name, names):temiz_names = [str(name).strip() for name in names if str(name).strip()]
 
-Boş grup hiç gösterilmez.
-
-if not temiz_names:return
+# Boş grup hiç gösterilmez.
+if not temiz_names:
+    return
 
 chips = "".join([f'<span class="mini-chip">{name}</span>' for name in temiz_names])
 
-st.markdown(f"""<div style="margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #eef2f7;"><div style="font-weight:800; color:#1b2430; margin-bottom:6px;">{group_name}</div><div class="chip-wrap">{chips}</div></div>""",unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <div style="margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #eef2f7;">
+        <div style="font-weight:800; color:#1b2430; margin-bottom:6px;">{group_name}</div>
+        <div class="chip-wrap">{chips}</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-def _render_grouped_debug_card(title, debug_df, year, month, list_column, count_column).markdown(f"""<div class="card" style="margin-bottom:12px;"><div class="card-title">{title}</div><div class="card-desc">{year}-{month:02d} ayı grup bazlı görünüm</div></div>""",unsafe_allow_html=True)
+def _render_grouped_debug_card(title, debug_df, year, month, list_column, count_column):st.markdown(f"""<div class="card" style="margin-bottom:12px;"><div class="card-title">{title}</div><div class="card-desc">{year}-{month:02d} ayı grup bazlı görünüm</div></div>""",unsafe_allow_html=True)
 
-required_cols = {"Yıl", "Ay", "Grup", list_column, count_column}if debug_df.empty or not required_cols.issubset(debug_df.columns):st.info("DEBUG OZET sekmesinde gerekli kolonlar bulunamadı.")return
+required_cols = {"Yıl", "Ay", "Grup", list_column, count_column}
+if debug_df.empty or not required_cols.issubset(debug_df.columns):
+    st.info("DEBUG OZET sekmesinde gerekli kolonlar bulunamadı.")
+    return
 
-view = debug_df[(debug_df["Yıl"] == year) & (debug_df["Ay"] == month)].copy()if view.empty:st.info("Seçilen ay için grup bazlı kayıt bulunamadı.")return
+view = debug_df[(debug_df["Yıl"] == year) & (debug_df["Ay"] == month)].copy()
+if view.empty:
+    st.info("Seçilen ay için grup bazlı kayıt bulunamadı.")
+    return
 
-view = view.sort_values("Grup")for _, row in view.iterrows():names = _split_names_text(row.get(list_column, ""))temiz_names = [str(name).strip() for name in names if str(name).strip()]
+view = view.sort_values("Grup")
+for _, row in view.iterrows():
+    names = _split_names_text(row.get(list_column, ""))
+    temiz_names = [str(name).strip() for name in names if str(name).strip()]
 
-# 0 kayıtlı gruplar ekranda hiç görünmez.
-if not temiz_names:
-    continue
+    # 0 kayıtlı gruplar ekranda hiç görünmez.
+    if not temiz_names:
+        continue
 
-group_name = row.get("Grup", "-")
-label = f"{group_name} — {len(temiz_names)} eczane"
-_render_group_list(label, temiz_names)
+    group_name = row.get("Grup", "-")
+    label = f"{group_name} — {len(temiz_names)} eczane"
+    _render_group_list(label, temiz_names)
 
-def render_genel_hafta_ici_sonu(df, genel).markdown('<div class="section-title">Genel Hafta İçi / Hafta Sonu</div>', unsafe_allow_html=True)st.markdown("""<div class="card" style="margin-bottom:14px;"><div class="card-title">Eczane bazlı hafta içi / hafta sonu dağılımı</div><div class="card-desc">Bu alan ilk yüklenen ana nöbet Excel dosyasındaki GENEL OZET sayfasından hesaplanır.Hafta içi = Pzt + Salı + Çarş + Perş + Cuma, hafta sonu = Ctesi + Pazar.</div></div>""",unsafe_allow_html=True)
+def render_genel_hafta_ici_sonu(df, genel):st.markdown('<div class="section-title">Genel Hafta İçi / Hafta Sonu</div>', unsafe_allow_html=True)st.markdown("""<div class="card" style="margin-bottom:14px;"><div class="card-title">Eczane bazlı hafta içi / hafta sonu dağılımı</div><div class="card-desc">Bu alan ilk yüklenen ana nöbet Excel dosyasındaki GENEL OZET sayfasından hesaplanır.Hafta içi = Pzt + Salı + Çarş + Perş + Cuma, hafta sonu = Ctesi + Pazar.</div></div>""",unsafe_allow_html=True)
 
-if genel is not None and {"Eczane", "Grup"}.issubset(genel.columns):kaynak = genel.copy()else:kaynak, _ = prepare_ozet_table(df, genel)
+if genel is not None and {"Eczane", "Grup"}.issubset(genel.columns):
+    kaynak = genel.copy()
+else:
+    kaynak, _ = prepare_ozet_table(df, genel)
 
-gun_kolonlari = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]for col in gun_kolonlari:if col not in kaynak.columns:kaynak[col] = 0kaynak[col] = pd.to_numeric(kaynak[col], errors="coerce").fillna(0).astype(int)
+gun_kolonlari = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
+for col in gun_kolonlari:
+    if col not in kaynak.columns:
+        kaynak[col] = 0
+    kaynak[col] = pd.to_numeric(kaynak[col], errors="coerce").fillna(0).astype(int)
 
-kaynak["Hafta İçi"] = (kaynak["Pzt"] +kaynak["Salı"] +kaynak["Çarş"] +kaynak["Perş"] +kaynak["Cuma"])
+kaynak["Hafta İçi"] = (
+    kaynak["Pzt"] +
+    kaynak["Salı"] +
+    kaynak["Çarş"] +
+    kaynak["Perş"] +
+    kaynak["Cuma"]
+)
 
-kaynak["Hafta Sonu"] = kaynak["Ctesi"] + kaynak["Pazar"]kaynak["Toplam"] = kaynak["Hafta İçi"] + kaynak["Hafta Sonu"]kaynak["Hafta Sonu Oranı"] = kaynak.apply(lambda r: round(r["Hafta Sonu"] / r["Toplam"], 4) if r["Toplam"] else 0,axis=1)
+kaynak["Hafta Sonu"] = kaynak["Ctesi"] + kaynak["Pazar"]
+kaynak["Toplam"] = kaynak["Hafta İçi"] + kaynak["Hafta Sonu"]
+kaynak["Hafta Sonu Oranı"] = kaynak.apply(
+    lambda r: round(r["Hafta Sonu"] / r["Toplam"], 4) if r["Toplam"] else 0,
+    axis=1
+)
 
-toplam_hafta_ici = int(kaynak["Hafta İçi"].sum())toplam_hafta_sonu = int(kaynak["Hafta Sonu"].sum())toplam = toplam_hafta_ici + toplam_hafta_sonuhafta_sonu_orani = round((toplam_hafta_sonu / toplam) * 100, 2) if toplam else 0
+toplam_hafta_ici = int(kaynak["Hafta İçi"].sum())
+toplam_hafta_sonu = int(kaynak["Hafta Sonu"].sum())
+toplam = toplam_hafta_ici + toplam_hafta_sonu
+hafta_sonu_orani = round((toplam_hafta_sonu / toplam) * 100, 2) if toplam else 0
 
-c1, c2, c3 = st.columns(3)with c1:show_metric_card("Toplam Hafta İçi", toplam_hafta_ici)with c2:show_metric_card("Toplam Hafta Sonu", toplam_hafta_sonu)with c3:show_metric_card("Hafta Sonu Oranı", f"%{hafta_sonu_orani}")
+c1, c2, c3 = st.columns(3)
+with c1:
+    show_metric_card("Toplam Hafta İçi", toplam_hafta_ici)
+with c2:
+    show_metric_card("Toplam Hafta Sonu", toplam_hafta_sonu)
+with c3:
+    show_metric_card("Hafta Sonu Oranı", f"%{hafta_sonu_orani}")
 
 st.markdown('<div class="section-title">Eczane Bazlı Liste</div>', unsafe_allow_html=True)
 
-goster_kolonlari = ["Eczane","Grup","Hafta İçi","Hafta Sonu","Toplam","Hafta Sonu Oranı"]goster_kolonlari = [c for c in goster_kolonlari if c in kaynak.columns]
+goster_kolonlari = [
+    "Eczane",
+    "Grup",
+    "Hafta İçi",
+    "Hafta Sonu",
+    "Toplam",
+    "Hafta Sonu Oranı"
+]
+goster_kolonlari = [c for c in goster_kolonlari if c in kaynak.columns]
 
-goster = kaynak[goster_kolonlari].copy()if {"Hafta Sonu", "Hafta İçi"}.issubset(goster.columns):goster = goster.sort_values(["Hafta Sonu", "Hafta İçi"], ascending=[False, False])
+goster = kaynak[goster_kolonlari].copy()
+if {"Hafta Sonu", "Hafta İçi"}.issubset(goster.columns):
+    goster = goster.sort_values(["Hafta Sonu", "Hafta İçi"], ascending=[False, False])
 
 st.dataframe(goster, use_container_width=True, height=620)
 
-def render_detayli_rapor().markdown('<div class="section-title">Detaylı Rapor</div>', unsafe_allow_html=True)st.markdown("""<div class="card" style="margin-bottom:14px;"><div class="card-title">Aylık data raporu</div><div class="card-desc">Bu alan opsiyoneldir. Sadece detaylı analiz görmek istediğinizde aylik_nobet_data.xlsx dosyasını buraya yükleyin.</div></div>""",unsafe_allow_html=True)
+def render_detayli_rapor():st.markdown('<div class="section-title">Detaylı Rapor</div>', unsafe_allow_html=True)st.markdown("""<div class="card" style="margin-bottom:14px;"><div class="card-title">Aylık data raporu</div><div class="card-desc">Bu alan opsiyoneldir. Sadece detaylı analiz görmek istediğinizde aylik_nobet_data.xlsx dosyasını buraya yükleyin.</div></div>""",unsafe_allow_html=True)
 
-detay_file = st.file_uploader("Detaylı rapor Excel dosyasını yükleyin",type=["xlsx"],key="detayli_rapor_excel")
+detay_file = st.file_uploader(
+    "Detaylı rapor Excel dosyasını yükleyin",
+    type=["xlsx"],
+    key="detayli_rapor_excel"
+)
 
-if detay_file is None:st.info("Detaylı rapor için aylik_nobet_data.xlsx dosyasını yükleyin.")return
+if detay_file is None:
+    st.info("Detaylı rapor için aylik_nobet_data.xlsx dosyasını yükleyin.")
+    return
 
-rapor = load_detayli_rapor(detay_file)periyot = rapor["periyot_ozet"]debug = rapor["debug_ozet"]sifir = rapor["aylik_sifir"]iki_plus = rapor["aylik_iki_plus"]
+rapor = load_detayli_rapor(detay_file)
+periyot = rapor["periyot_ozet"]
+debug = rapor["debug_ozet"]
+sifir = rapor["aylik_sifir"]
+iki_plus = rapor["aylik_iki_plus"]
 
-if periyot.empty and debug.empty and sifir.empty and iki_plus.empty:st.error("Bu dosyada beklenen detay rapor sekmeleri bulunamadı.")return
+if periyot.empty and debug.empty and sifir.empty and iki_plus.empty:
+    st.error("Bu dosyada beklenen detay rapor sekmeleri bulunamadı.")
+    return
 
-Ay seçimi kartları filtrelemek için kullanılır.
+# Ay seçimi kartları filtrelemek için kullanılır.
+ay_options = []
+for kaynak in [debug, sifir, iki_plus]:
+    if not kaynak.empty and {"Yıl", "Ay"}.issubset(kaynak.columns):
+        ay_options += kaynak[["Yıl", "Ay"]].drop_duplicates().apply(
+            lambda r: f"{int(r['Yıl'])}-{int(r['Ay']):02d}", axis=1
+        ).tolist()
 
-ay_options = []for kaynak in [debug, sifir, iki_plus]:if not kaynak.empty and {"Yıl", "Ay"}.issubset(kaynak.columns):ay_options += kaynak[["Yıl", "Ay"]].drop_duplicates().apply(lambda r: f"{int(r['Yıl'])}-{int(r['Ay']):02d}", axis=1).tolist()
+ay_options = sorted(set(ay_options))
+secili_yil, secili_ay_no = None, None
 
-ay_options = sorted(set(ay_options))secili_yil, secili_ay_no = None, None
+if ay_options:
+    secili_ay = st.selectbox("Ay seç", ay_options)
+    secili_yil, secili_ay_no = map(int, secili_ay.split("-"))
 
-if ay_options:secili_ay = st.selectbox("Ay seç", ay_options)secili_yil, secili_ay_no = map(int, secili_ay.split("-"))
-
-PERIYOT OZET
-
+# PERIYOT OZET
 st.markdown('<div class="section-title">Periyodik Özet</div>', unsafe_allow_html=True)
 
-if not periyot.empty:kolonlar = ["Eczane", "Grup", "Periyot Toplam Katsayı", "Periyot Bayram","Hafta İçi", "Hafta Sonu", "Hafta Sonu Oranı","Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar", "Arefe"]mevcut_kolonlar = [c for c in kolonlar if c in periyot.columns]st.dataframe(periyot[mevcut_kolonlar], use_container_width=True, height=420)else:st.info("PERIYOT OZET sekmesi bulunamadı.")
+if not periyot.empty:
+    kolonlar = [
+        "Eczane", "Grup", "Periyot Toplam Katsayı", "Periyot Bayram",
+        "Hafta İçi", "Hafta Sonu", "Hafta Sonu Oranı",
+        "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar", "Arefe"
+    ]
+    mevcut_kolonlar = [c for c in kolonlar if c in periyot.columns]
+    st.dataframe(periyot[mevcut_kolonlar], use_container_width=True, height=420)
+else:
+    st.info("PERIYOT OZET sekmesi bulunamadı.")
 
-AYLIK 0 / 2+ KARTLARI - DEBUG OZET grup bazlı
-
+# AYLIK 0 / 2+ KARTLARI - DEBUG OZET grup bazlı
 st.markdown('<div class="section-title">Aylık Kritik Kartlar</div>', unsafe_allow_html=True)
 
-if secili_yil is None:st.info("Kartlar için detay raporda Yıl/Ay bilgisi bulunamadı.")return
+if secili_yil is None:
+    st.info("Kartlar için detay raporda Yıl/Ay bilgisi bulunamadı.")
+    return
 
 col1, col2 = st.columns(2)
 
-with col1:_render_grouped_debug_card(title="Aylık 0 Nöbet",debug_df=debug,year=secili_yil,month=secili_ay_no,list_column="0 Nöbetliler",count_column="0 Nöbet Sayısı")
+with col1:
+    _render_grouped_debug_card(
+        title="Aylık 0 Nöbet",
+        debug_df=debug,
+        year=secili_yil,
+        month=secili_ay_no,
+        list_column="0 Nöbetliler",
+        count_column="0 Nöbet Sayısı"
+    )
 
-with col2:_render_grouped_debug_card(title="Aylık 2+ Nöbet",debug_df=debug,year=secili_yil,month=secili_ay_no,list_column="2+ Nöbetliler",count_column="2+ Nöbet Sayısı")
+with col2:
+    _render_grouped_debug_card(
+        title="Aylık 2+ Nöbet",
+        debug_df=debug,
+        year=secili_yil,
+        month=secili_ay_no,
+        list_column="2+ Nöbetliler",
+        count_column="2+ Nöbet Sayısı"
+    )
 
-def prepare_ozet_table(df, genel) = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
+def prepare_ozet_table(df, genel):gun_sira = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
 
-gun_pivot = pd.pivot_table(df,index=["Eczane", "Grup"],columns="Gün",aggfunc="size",fill_value=0).reset_index()
+gun_pivot = pd.pivot_table(
+    df,
+    index=["Eczane", "Grup"],
+    columns="Gün",
+    aggfunc="size",
+    fill_value=0
+).reset_index()
 
-Gün isimleri farklı gelirse yine de kırılmasın.
-
-gun_alias = {"Pazartesi": "Pzt","Pzt": "Pzt","Salı": "Salı","Sali": "Salı","Çarşamba": "Çarş","Çarş": "Çarş","Carsamba": "Çarş","Perşembe": "Perş","Perş": "Perş","Persembe": "Perş","Cuma": "Cuma","Cumartesi": "Ctesi","Ctesi": "Ctesi","Pazar": "Pazar",}
+# Gün isimleri farklı gelirse yine de kırılmasın.
+gun_alias = {
+    "Pazartesi": "Pzt",
+    "Pzt": "Pzt",
+    "Salı": "Salı",
+    "Sali": "Salı",
+    "Çarşamba": "Çarş",
+    "Çarş": "Çarş",
+    "Carsamba": "Çarş",
+    "Perşembe": "Perş",
+    "Perş": "Perş",
+    "Persembe": "Perş",
+    "Cuma": "Cuma",
+    "Cumartesi": "Ctesi",
+    "Ctesi": "Ctesi",
+    "Pazar": "Pazar",
+}
 
 gun_pivot = gun_pivot.rename(columns={c: gun_alias.get(str(c), c) for c in gun_pivot.columns})
 
-Aynı güne denk gelen olası duplicate kolonları birleştir.
+# Aynı güne denk gelen olası duplicate kolonları birleştir.
+for g in gun_sira:
+    same_cols = [c for c in gun_pivot.columns if c == g]
+    if len(same_cols) > 1:
+        gun_pivot[g] = gun_pivot[same_cols].sum(axis=1)
 
-for g in gun_sira:same_cols = [c for c in gun_pivot.columns if c == g]if len(same_cols) > 1:gun_pivot[g] = gun_pivot[same_cols].sum(axis=1)
+keep_cols = ["Eczane", "Grup"] + [g for g in gun_sira if g in gun_pivot.columns]
+gun_pivot = gun_pivot.loc[:, ~gun_pivot.columns.duplicated()].copy()
+gun_pivot = gun_pivot[[c for c in keep_cols if c in gun_pivot.columns]]
 
-keep_cols = ["Eczane", "Grup"] + [g for g in gun_sira if g in gun_pivot.columns]gun_pivot = gun_pivot.loc[:, ~gun_pivot.columns.duplicated()].copy()gun_pivot = gun_pivot[[c for c in keep_cols if c in gun_pivot.columns]]
-
-if genel is not None and {"Eczane", "Grup"}.issubset(genel.columns):ozet = genel.merge(gun_pivot, on=["Eczane", "Grup"], how="left", suffixes=("_genel", ""))else:ozet = gun_pivot.copy()
-
-Merge sonrası oluşabilecek _genel / _x / _y kolon karmaşasını temizle.
-
-for g in gun_sira:candidates = [g,f"{g}_y",f"{g}_x",f"{g}_genel",]found = [c for c in candidates if c in ozet.columns]
-
-if found:
-    ozet[g] = ozet[found].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1)
+if genel is not None and {"Eczane", "Grup"}.issubset(genel.columns):
+    ozet = genel.merge(gun_pivot, on=["Eczane", "Grup"], how="left", suffixes=("_genel", ""))
 else:
-    ozet[g] = 0
+    ozet = gun_pivot.copy()
 
-sabit_kolonlar = ["Eczane","Grup","Geçmiş Katsayı","Geçmiş Bayram","Toplam Katsayı","Bayram"]
+# Merge sonrası oluşabilecek _genel / _x / _y kolon karmaşasını temizle.
+for g in gun_sira:
+    candidates = [
+        g,
+        f"{g}_y",
+        f"{g}_x",
+        f"{g}_genel",
+    ]
+    found = [c for c in candidates if c in ozet.columns]
+
+    if found:
+        ozet[g] = ozet[found].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1)
+    else:
+        ozet[g] = 0
+
+sabit_kolonlar = [
+    "Eczane",
+    "Grup",
+    "Geçmiş Katsayı",
+    "Geçmiş Bayram",
+    "Toplam Katsayı",
+    "Bayram"
+]
 
 mevcut_sabitler = [c for c in sabit_kolonlar if c in ozet.columns]
 
-KeyError oluşmaması için sadece gerçekten var olan kolonları al.
-
-final_cols = mevcut_sabitler + gun_sirafinal_cols = [c for c in final_cols if c in ozet.columns]
+# KeyError oluşmaması için sadece gerçekten var olan kolonları al.
+final_cols = mevcut_sabitler + gun_sira
+final_cols = [c for c in final_cols if c in ozet.columns]
 
 ozet = ozet[final_cols].copy()
 
-for g in gun_sira:if g in ozet.columns:ozet[g] = pd.to_numeric(ozet[g], errors="coerce").fillna(0).astype(int)
+for g in gun_sira:
+    if g in ozet.columns:
+        ozet[g] = pd.to_numeric(ozet[g], errors="coerce").fillna(0).astype(int)
 
 return ozet, gun_sira
 
-def render_header().markdown('<div class="main-title">AYÇA | Eczane Nöbet Takip Sistemi</div>', unsafe_allow_html=True)st.markdown('<div class="main-subtitle">Nöbet planını yalnızca görüntülemek değil, daha şeffaf ve daha yönetilebilir hale getirmek için tasarlandı.</div>',unsafe_allow_html=True)
+def render_header():st.markdown('<div class="main-title">AYÇA | Eczane Nöbet Takip Sistemi</div>', unsafe_allow_html=True)st.markdown('<div class="main-subtitle">Nöbet planını yalnızca görüntülemek değil, daha şeffaf ve daha yönetilebilir hale getirmek için tasarlandı.</div>',unsafe_allow_html=True)
 
-st.markdown("""<div class="hero-box"><div class="hero-badge">Akıllı kontrol paneli</div><div class="hero-headline">Nöbet planı hazır. <span class="blue">Peki gerçekten</span> <span class="green">adil mi?</span></div><div class="hero-text">AYÇA ile nöbet dağılımını tarih, grup ve eczane bazında izleyebilir; gün dengesi, dağılım görünümü ve özet tabloları tek ekranda takip edebilirsin.</div></div>""",unsafe_allow_html=True)
+st.markdown(
+    """
+    <div class="hero-box">
+        <div class="hero-badge">Akıllı kontrol paneli</div>
+        <div class="hero-headline">
+            Nöbet planı hazır. <span class="blue">Peki gerçekten</span> <span class="green">adil mi?</span>
+        </div>
+        <div class="hero-text">
+            AYÇA ile nöbet dağılımını tarih, grup ve eczane bazında izleyebilir; gün dengesi, dağılım görünümü ve özet tabloları tek ekranda takip edebilirsin.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 ==============================
 
@@ -474,7 +657,7 @@ SIDEBAR LOGO
 
 logo_path = "logo.png"
 
-if os.path.exists(logo_path).sidebar.image(logo_path, width=360)else.sidebar.markdown('<div class="logo-wrap">', unsafe_allow_html=True)st.sidebar.markdown('<div class="logo-title">AYÇA Paneli</div>', unsafe_allow_html=True)st.sidebar.markdown('<div class="logo-subtitle">Akıllı Yazılım Çözüm Asistanı</div>', unsafe_allow_html=True)
+if os.path.exists(logo_path):st.sidebar.image(logo_path, width=360)else:st.sidebar.markdown('<div class="logo-wrap">', unsafe_allow_html=True)st.sidebar.markdown('<div class="logo-title">AYÇA Paneli</div>', unsafe_allow_html=True)st.sidebar.markdown('<div class="logo-subtitle">Akıllı Yazılım Çözüm Asistanı</div>', unsafe_allow_html=True)
 
 ==============================
 
@@ -500,7 +683,7 @@ DETAYLI RAPOR ANA BÖLÜMÜ
 
 ==============================
 
-if ana_bolum == "Detaylı Rapor".sidebar.markdown("""<div class="small-note">Detaylı rapor alanı ayrı Excel ile çalışır. Ana nöbet planı Excel'i yüklemenize gerek yoktur.</div>""",unsafe_allow_html=True)render_detayli_rapor()st.stop()
+if ana_bolum == "Detaylı Rapor":st.sidebar.markdown("""<div class="small-note">Detaylı rapor alanı ayrı Excel ile çalışır. Ana nöbet planı Excel'i yüklemenize gerek yoktur.</div>""",unsafe_allow_html=True)render_detayli_rapor()st.stop()
 
 ==============================
 
@@ -510,11 +693,11 @@ ANA PANEL DOSYA YÜKLEME
 
 file = st.file_uploader("Ana nöbet planı Excel dosyasını yükleyin", type=["xlsx"])
 
-if not file.info("Başlamak için ana nöbet planı Excel dosyasını yükleyin.")st.stop()
+if not file:st.info("Başlamak için ana nöbet planı Excel dosyasını yükleyin.")st.stop()
 
 df, genel = load_excel(file)
 
-if df.empty.error("Excel dosyasında okunabilir nöbet verisi bulunamadı.")st.stop()
+if df.empty:st.error("Excel dosyasında okunabilir nöbet verisi bulunamadı.")st.stop()
 
 ==============================
 
@@ -534,19 +717,49 @@ GENEL ÖZET
 
 ==============================
 
-if menu == "Genel Özet" = len(df)toplam_eczane = df["Eczane"].nunique()toplam_ay = df["Ay"].nunique()ortalama_nobet = round(toplam_nobet / toplam_eczane, 2) if toplam_eczane else 0
+if menu == "Genel Özet":toplam_nobet = len(df)toplam_eczane = df["Eczane"].nunique()toplam_ay = df["Ay"].nunique()ortalama_nobet = round(toplam_nobet / toplam_eczane, 2) if toplam_eczane else 0
 
-c1, c2, c3, c4 = st.columns(4)with c1:show_metric_card("Toplam Nöbet", toplam_nobet)with c2:show_metric_card("Toplam Eczane", toplam_eczane)with c3:show_metric_card("Toplam Ay", toplam_ay)with c4:show_metric_card("Ortalama Nöbet", ortalama_nobet)
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    show_metric_card("Toplam Nöbet", toplam_nobet)
+with c2:
+    show_metric_card("Toplam Eczane", toplam_eczane)
+with c3:
+    show_metric_card("Toplam Ay", toplam_ay)
+with c4:
+    show_metric_card("Ortalama Nöbet", ortalama_nobet)
 
 st.markdown('<div class="section-title">Gün Dağılımı</div>', unsafe_allow_html=True)
 
-gun_sayim = df["Gün"].value_counts().reset_index()gun_sayim.columns = ["Gün", "Sayı"]
+gun_sayim = df["Gün"].value_counts().reset_index()
+gun_sayim.columns = ["Gün", "Sayı"]
 
-gun_sira = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]gun_sayim["Gün"] = pd.Categorical(gun_sayim["Gün"], categories=gun_sira, ordered=True)gun_sayim = gun_sayim.sort_values("Gün")
+gun_sira = ["Pzt", "Salı", "Çarş", "Perş", "Cuma", "Ctesi", "Pazar"]
+gun_sayim["Gün"] = pd.Categorical(gun_sayim["Gün"], categories=gun_sira, ordered=True)
+gun_sayim = gun_sayim.sort_values("Gün")
 
-fig = px.pie(gun_sayim,names="Gün",values="Sayı",hole=0.55,color="Gün",color_discrete_sequence=["#1f4b99", "#2e6bdb", "#4d8af0", "#7bb0ff", "#22a06b", "#49c38a", "#9edcbf"])fig.update_traces(textposition="inside", textinfo="percent+label")fig.update_layout(margin=dict(l=10, r=10, t=10, b=10),paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",legend_title_text="")st.plotly_chart(fig, use_container_width=True)
+fig = px.pie(
+    gun_sayim,
+    names="Gün",
+    values="Sayı",
+    hole=0.55,
+    color="Gün",
+    color_discrete_sequence=[
+        "#1f4b99", "#2e6bdb", "#4d8af0", "#7bb0ff", "#22a06b", "#49c38a", "#9edcbf"
+    ]
+)
+fig.update_traces(textposition="inside", textinfo="percent+label")
+fig.update_layout(
+    margin=dict(l=10, r=10, t=10, b=10),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    legend_title_text=""
+)
+st.plotly_chart(fig, use_container_width=True)
 
-st.markdown('<div class="section-title">Özet Tablo</div>', unsafe_allow_html=True)ozet, _ = prepare_ozet_table(df, genel)st.dataframe(ozet, use_container_width=True, height=500)
+st.markdown('<div class="section-title">Özet Tablo</div>', unsafe_allow_html=True)
+ozet, _ = prepare_ozet_table(df, genel)
+st.dataframe(ozet, use_container_width=True, height=500)
 
 ==============================
 
@@ -554,19 +767,40 @@ TARİH SEÇ
 
 ==============================
 
-elif menu == "Tarih Seç" = df["Tarih"].min().date()max_tarih = df["Tarih"].max().date()
+elif menu == "Tarih Seç":min_tarih = df["Tarih"].min().date()max_tarih = df["Tarih"].max().date()
 
 col1, col2 = st.columns([1, 2])
 
-with col1:tarih = st.date_input("Tarih seçin",value=min_tarih,min_value=min_tarih,max_value=max_tarih)
+with col1:
+    tarih = st.date_input(
+        "Tarih seçin",
+        value=min_tarih,
+        min_value=min_tarih,
+        max_value=max_tarih
+    )
 
-secilen_tarih = tarih.to_pydatetime().date() if hasattr(tarih, "to_pydatetime") else tarihsonuc = df[df["Tarih"].dt.date == secilen_tarih].copy().sort_values(["Grup", "Eczane"])
+secilen_tarih = tarih.to_pydatetime().date() if hasattr(tarih, "to_pydatetime") else tarih
+sonuc = df[df["Tarih"].dt.date == secilen_tarih].copy().sort_values(["Grup", "Eczane"])
 
-with col2:st.markdown(f"""<div class="card"><div class="card-title">Seçilen Tarih</div><div class="card-desc" style="font-size:1.15rem;">{secilen_tarih.day} {aylar_tr[secilen_tarih.month]} {secilen_tarih.year}</div></div>""",unsafe_allow_html=True)
+with col2:
+    st.markdown(
+        f"""
+        <div class="card">
+            <div class="card-title">Seçilen Tarih</div>
+            <div class="card-desc" style="font-size:1.15rem;">
+                {secilen_tarih.day} {aylar_tr[secilen_tarih.month]} {secilen_tarih.year}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 st.markdown('<div class="section-title">O gün nöbetçi olan eczaneler</div>', unsafe_allow_html=True)
 
-if sonuc.empty:st.warning("Seçilen tarihte kayıt bulunamadı.")else:st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Eczane"]], use_container_width=True, height=450)
+if sonuc.empty:
+    st.warning("Seçilen tarihte kayıt bulunamadı.")
+else:
+    st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Eczane"]], use_container_width=True, height=450)
 
 ==============================
 
@@ -574,18 +808,27 @@ AYLIK TAKVİM
 
 ==============================
 
-elif menu == "Aylık Takvim" = st.selectbox("Ay seç", sorted(df["Ay"].unique()))sonuc = df[df["Ay"] == ay].copy()
+elif menu == "Aylık Takvim":ay = st.selectbox("Ay seç", sorted(df["Ay"].unique()))sonuc = df[df["Ay"] == ay].copy()
 
 st.markdown('<div class="section-title">Aylık nöbet takvimi</div>', unsafe_allow_html=True)
 
-if sonuc.empty:st.warning("Seçilen ay için veri bulunamadı.")else:pivot = pd.pivot_table(sonuc,index="Tarih",columns="Grup",values="Eczane",aggfunc="first")
+if sonuc.empty:
+    st.warning("Seçilen ay için veri bulunamadı.")
+else:
+    pivot = pd.pivot_table(
+        sonuc,
+        index="Tarih",
+        columns="Grup",
+        values="Eczane",
+        aggfunc="first"
+    )
 
-pivot = pivot.fillna("")
-pivot = pivot.sort_index()
-pivot.index = pd.to_datetime(pivot.index).strftime("%d.%m.%Y")
-pivot = pivot.reset_index().rename(columns={"index": "Tarih"})
+    pivot = pivot.fillna("")
+    pivot = pivot.sort_index()
+    pivot.index = pd.to_datetime(pivot.index).strftime("%d.%m.%Y")
+    pivot = pivot.reset_index().rename(columns={"index": "Tarih"})
 
-st.dataframe(pivot, use_container_width=True, height=650)
+    st.dataframe(pivot, use_container_width=True, height=650)
 
 ==============================
 
@@ -593,13 +836,23 @@ GRUP ANALİZİ
 
 ==============================
 
-elif menu == "Grup Analizi" genel is not None and "Grup" in genel.columns = sorted(genel["Grup"].dropna().unique())else = sorted(df["Grup"].dropna().unique())
+elif menu == "Grup Analizi":if genel is not None and "Grup" in genel.columns:grup_listesi = sorted(genel["Grup"].dropna().unique())else:grup_listesi = sorted(df["Grup"].dropna().unique())
 
-st.markdown('<div class="section-title">Grup görünümü</div>', unsafe_allow_html=True)grup = st.selectbox("Grup seç", grup_listesi)
+st.markdown('<div class="section-title">Grup görünümü</div>', unsafe_allow_html=True)
+grup = st.selectbox("Grup seç", grup_listesi)
 
-ozet, gun_sira = prepare_ozet_table(df, genel)grup_ozet = ozet[ozet["Grup"] == grup].copy()
+ozet, gun_sira = prepare_ozet_table(df, genel)
+grup_ozet = ozet[ozet["Grup"] == grup].copy()
 
-st.markdown(f"""<div class="card" style="margin-bottom:12px;"><div class="card-title">{grup} grubu eczaneleri</div><div class="card-desc">Bu alanda ilgili grubun geçmiş ve gün bazlı nöbet dağılımını toplu olarak görebilirsin.</div></div>""",unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <div class="card" style="margin-bottom:12px;">
+        <div class="card-title">{grup} grubu eczaneleri</div>
+        <div class="card-desc">Bu alanda ilgili grubun geçmiş ve gün bazlı nöbet dağılımını toplu olarak görebilirsin.</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 st.dataframe(grup_ozet, use_container_width=True, height=400)
 
@@ -607,11 +860,35 @@ st.markdown('<div class="section-title">Grup günlere göre nöbet dağılımı<
 
 sonuc = df[df["Grup"] == grup].copy()
 
-sayim = (sonuc.groupby(["Gün", "Eczane"]).size().reset_index(name="Nöbet Sayısı"))
+sayim = (
+    sonuc.groupby(["Gün", "Eczane"])
+    .size()
+    .reset_index(name="Nöbet Sayısı")
+)
 
-sayim["Gün"] = pd.Categorical(sayim["Gün"],categories=gun_sira,ordered=True)sayim = sayim.sort_values("Gün")
+sayim["Gün"] = pd.Categorical(
+    sayim["Gün"],
+    categories=gun_sira,
+    ordered=True
+)
+sayim = sayim.sort_values("Gün")
 
-fig = px.bar(sayim,x="Gün",y="Nöbet Sayısı",color="Eczane",barmode="group",category_orders={"Gün": gun_sira},color_discrete_sequence=px.colors.qualitative.Set2)fig.update_layout(margin=dict(l=10, r=10, t=30, b=10),paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",legend_title_text="")st.plotly_chart(fig, use_container_width=True)
+fig = px.bar(
+    sayim,
+    x="Gün",
+    y="Nöbet Sayısı",
+    color="Eczane",
+    barmode="group",
+    category_orders={"Gün": gun_sira},
+    color_discrete_sequence=px.colors.qualitative.Set2
+)
+fig.update_layout(
+    margin=dict(l=10, r=10, t=30, b=10),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    legend_title_text=""
+)
+st.plotly_chart(fig, use_container_width=True)
 
 ==============================
 
@@ -619,23 +896,40 @@ ECZANE ANALİZİ
 
 ==============================
 
-elif menu == "Eczane Analizi".markdown('<div class="section-title">Eczane arama</div>', unsafe_allow_html=True)
+elif menu == "Eczane Analizi":st.markdown('<div class="section-title">Eczane arama</div>', unsafe_allow_html=True)
 
-arama = st.text_input("Eczane adı ara")eczane_listesi = sorted(df["Eczane"].dropna().unique())
+arama = st.text_input("Eczane adı ara")
+eczane_listesi = sorted(df["Eczane"].dropna().unique())
 
-if arama:eczane_listesi = [e for e in eczane_listesi if arama.lower() in e.lower()]
+if arama:
+    eczane_listesi = [e for e in eczane_listesi if arama.lower() in e.lower()]
 
-if not eczane_listesi:st.warning("Arama kriterine uygun eczane bulunamadı.")st.stop()
+if not eczane_listesi:
+    st.warning("Arama kriterine uygun eczane bulunamadı.")
+    st.stop()
 
-eczane = st.selectbox("Eczane seç", eczane_listesi)sonuc = df[df["Eczane"] == eczane].copy().sort_values("Tarih")
+eczane = st.selectbox("Eczane seç", eczane_listesi)
+sonuc = df[df["Eczane"] == eczane].copy().sort_values("Tarih")
 
 c1, c2 = st.columns([1, 2])
 
-with c1:show_metric_card("Toplam Nöbet", len(sonuc))
+with c1:
+    show_metric_card("Toplam Nöbet", len(sonuc))
 
-with c2:grup_bilgisi = sonuc["Grup"].iloc[0] if not sonuc.empty else "-"st.markdown(f"""<div class="metric-card"><div class="metric-label">Grup</div><div class="metric-value" style="font-size:1.5rem;">{grup_bilgisi}</div></div>""",unsafe_allow_html=True)
+with c2:
+    grup_bilgisi = sonuc["Grup"].iloc[0] if not sonuc.empty else "-"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">Grup</div>
+            <div class="metric-value" style="font-size:1.5rem;">{grup_bilgisi}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-st.markdown('<div class="section-title">Eczane nöbet geçmişi</div>', unsafe_allow_html=True)st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Ay"]], use_container_width=True, height=450)
+st.markdown('<div class="section-title">Eczane nöbet geçmişi</div>', unsafe_allow_html=True)
+st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Ay"]], use_container_width=True, height=450)
 
 ==============================
 
@@ -643,4 +937,4 @@ GENEL HAFTA İÇİ / HAFTA SONU
 
 ==============================
 
-elif menu == "Genel Hafta İçi / Hafta Sonu"(df, genel)
+elif menu == "Genel Hafta İçi / Hafta Sonu":render_genel_hafta_ici_sonu(df, genel)
