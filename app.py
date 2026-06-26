@@ -31,176 +31,309 @@ st.set_page_config(
 )
 
 # ==============================
-# TASARIM / CSS
+# TASARIM / CSS - AYÇA V2
 # ==============================
 st.markdown("""
 <style>
 :root {
-    --bg: #f6f8fb;
+    --bg: #f5f8fc;
     --surface: #ffffff;
-    --primary: #1f4b99;
-    --primary2: #2e6bdb;
-    --accent: #22a06b;
-    --text: #1b2430;
-    --muted: #5e6b7a;
-    --line: #dbe3ee;
-    --soft: #eef4ff;
-    --shadow: 0 12px 30px rgba(22, 34, 51, 0.08);
-    --radius: 18px;
+    --surface2: #f8fbff;
+    --primary: #155eef;
+    --primary-dark: #0f3f9e;
+    --accent: #16b8a6;
+    --accent-soft: #e7fbf8;
+    --text: #0f172a;
+    --muted: #667085;
+    --line: #d9e2ef;
+    --soft: #eef5ff;
+    --danger: #f04438;
+    --warning: #f79009;
+    --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    --shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.06);
+    --radius: 22px;
 }
 
-html, body, [class*="css"]  {
-    font-family: "Inter", sans-serif;
+html, body, [class*="css"] {
+    font-family: "Inter", "Segoe UI", sans-serif;
 }
 
 .stApp {
-    background: linear-gradient(180deg, #f9fbff 0%, #f3f6fb 100%);
+    background:
+      radial-gradient(circle at top left, rgba(21,94,239,0.10), transparent 32%),
+      linear-gradient(180deg, #fbfdff 0%, #f3f7fc 100%);
+    color: var(--text);
 }
 
 header[data-testid="stHeader"] {
-    background: rgba(0, 0, 0, 0);
+    background: rgba(255,255,255,0);
+}
+
+.block-container {
+    padding-top: 1.4rem;
+    padding-bottom: 2.5rem;
+    max-width: 1500px;
 }
 
 section[data-testid="stSidebar"] {
-    background: #ffffff;
+    background: rgba(255,255,255,0.94);
     border-right: 1px solid var(--line);
 }
 
 section[data-testid="stSidebar"] .block-container {
-    padding-top: 1.2rem;
+    padding-top: 1.1rem;
 }
 
-.block-container {
-    padding-top: 2.4rem;
-    padding-bottom: 2rem;
+section[data-testid="stSidebar"] label {
+    font-weight: 650;
+}
+
+div[role="radiogroup"] label {
+    padding: 4px 0;
 }
 
 .main-title {
-    font-size: 2.2rem;
-    font-weight: 800;
+    font-size: 2.35rem;
+    font-weight: 900;
     color: var(--text);
-    margin-top: 0.2rem;
-    margin-bottom: 0.35rem;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.04em;
+    margin-bottom: 0.25rem;
 }
 
 .main-subtitle {
     color: var(--muted);
-    font-size: 1rem;
-    margin-bottom: 1.2rem;
+    font-size: 1.02rem;
+    margin-bottom: 1rem;
 }
 
 .hero-box {
-    background: linear-gradient(135deg, rgba(31,75,153,0.08), rgba(34,160,107,0.08));
-    border: 1px solid var(--line);
-    border-radius: 24px;
-    padding: 24px 28px;
+    position: relative;
+    overflow: hidden;
+    background:
+        linear-gradient(135deg, rgba(21,94,239,0.11), rgba(22,184,166,0.10)),
+        #ffffff;
+    border: 1px solid #dce7f7;
+    border-radius: 30px;
+    padding: 28px 30px;
     box-shadow: var(--shadow);
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.3rem;
+}
+
+.hero-box:after {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    right: -95px;
+    top: -130px;
+    background: radial-gradient(circle, rgba(22,184,166,0.24), rgba(22,184,166,0));
 }
 
 .hero-badge {
-    display: inline-block;
-    background: #e9f1ff;
-    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    color: var(--primary-dark);
     border: 1px solid #cfe0ff;
     border-radius: 999px;
     padding: 8px 14px;
     font-size: 0.82rem;
-    font-weight: 700;
-    margin-bottom: 14px;
+    font-weight: 800;
+    margin-bottom: 15px;
+    box-shadow: var(--shadow-soft);
 }
 
 .hero-headline {
-    font-size: 2rem;
+    font-size: 2.05rem;
     line-height: 1.08;
-    font-weight: 800;
+    font-weight: 900;
     color: var(--text);
     margin-bottom: 10px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.04em;
 }
 
-.hero-headline .blue {
-    color: var(--primary2);
-}
-
-.hero-headline .green {
-    color: var(--accent);
-}
+.hero-headline .blue { color: var(--primary); }
+.hero-headline .green { color: var(--accent); }
 
 .hero-text {
     color: var(--muted);
     font-size: 1rem;
-    line-height: 1.75;
-    max-width: 900px;
+    line-height: 1.7;
+    max-width: 940px;
+}
+
+.card, .metric-card, .ai-card, .duty-card {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
 }
 
 .card {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
     padding: 18px 18px;
-    box-shadow: var(--shadow);
 }
 
 .card-title {
-    font-size: 1.05rem;
-    font-weight: 800;
+    font-size: 1.04rem;
+    font-weight: 850;
     color: var(--text);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.35rem;
 }
 
 .card-desc {
     color: var(--muted);
-    line-height: 1.6;
-    font-size: 0.95rem;
+    line-height: 1.62;
+    font-size: 0.94rem;
 }
 
 .metric-card {
-    background: #ffffff;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 14px 16px;
+    padding: 18px 18px;
+    min-height: 118px;
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
     box-shadow: var(--shadow);
+}
+
+.metric-top {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom: 10px;
+}
+
+.metric-icon {
+    width: 38px;
+    height: 38px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius: 14px;
+    background: var(--soft);
+    color: var(--primary);
+    font-size: 1.15rem;
 }
 
 .metric-label {
     color: var(--muted);
     font-size: 0.9rem;
-    margin-bottom: 6px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .metric-value {
     color: var(--text);
-    font-size: 1.8rem;
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+}
+
+.metric-delta {
+    margin-top: 6px;
+    color: var(--accent);
+    font-size: 0.82rem;
     font-weight: 800;
 }
 
-.section-title {
-    font-size: 1.15rem;
-    font-weight: 800;
+.ai-card {
+    padding: 18px 20px;
+    margin: 12px 0 18px 0;
+    background:
+      linear-gradient(135deg, rgba(21,94,239,0.08), rgba(22,184,166,0.08)),
+      #ffffff;
+}
+
+.ai-title {
+    font-size: 1rem;
+    font-weight: 900;
     color: var(--text);
-    margin: 0.4rem 0 0.8rem 0;
+    margin-bottom: 7px;
+}
+
+.ai-text {
+    color: #344054;
+    line-height: 1.65;
+    font-size: 0.96rem;
+}
+
+.section-title {
+    font-size: 1.18rem;
+    font-weight: 900;
+    color: var(--text);
+    margin: 1rem 0 0.75rem 0;
+    letter-spacing: -0.025em;
 }
 
 .small-note {
     color: var(--muted);
     font-size: 0.9rem;
+    line-height: 1.6;
 }
 
-.logo-wrap {
-    margin-bottom: 0.8rem;
+.duty-card {
+    padding: 16px 16px;
+    min-height: 118px;
+    border-left: 5px solid var(--primary);
 }
 
+.duty-group {
+    color: var(--primary-dark);
+    font-weight: 900;
+    font-size: 0.88rem;
+    margin-bottom: 8px;
+}
+
+.duty-name {
+    color: var(--text);
+    font-weight: 900;
+    font-size: 1.25rem;
+    letter-spacing: -0.03em;
+}
+
+.duty-meta {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-top: 8px;
+}
+
+.timeline {
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin: 10px 0 18px 0;
+}
+
+.timeline-item {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 12px;
+    color:var(--text);
+    font-size:0.87rem;
+    font-weight:750;
+    box-shadow: var(--shadow-soft);
+}
+
+.timeline-dot {
+    width:9px;
+    height:9px;
+    border-radius:999px;
+    background:var(--accent);
+}
+
+.logo-wrap { margin-bottom: 0.8rem; }
 .logo-title {
     font-size: 1.15rem;
-    font-weight: 800;
+    font-weight: 900;
     color: var(--text);
     margin-top: 0.3rem;
 }
-
 .logo-subtitle {
     color: var(--muted);
     font-size: 0.85rem;
@@ -208,41 +341,28 @@ section[data-testid="stSidebar"] .block-container {
     margin-bottom: 1rem;
 }
 
-div[data-testid="metric-container"] {
-    background: #ffffff;
-    border: 1px solid var(--line);
-    padding: 14px;
-    border-radius: 18px;
-    box-shadow: var(--shadow);
-}
-
-div[data-testid="metric-container"] label {
-    color: var(--muted) !important;
-    font-weight: 600 !important;
-}
-
-.stButton > button {
-    background: linear-gradient(135deg, var(--primary), var(--primary2));
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 0.65rem 1.1rem;
-    font-weight: 700;
-}
-
+.stButton > button,
 .stDownloadButton > button {
-    background: linear-gradient(135deg, var(--primary), var(--primary2));
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     color: white;
     border: none;
-    border-radius: 12px;
-    padding: 0.65rem 1.1rem;
-    font-weight: 700;
+    border-radius: 14px;
+    padding: 0.68rem 1.1rem;
+    font-weight: 800;
 }
 
 .stSelectbox > div > div,
 .stTextInput > div > div > input,
-.stDateInput > div > div input {
-    border-radius: 12px !important;
+.stDateInput > div > div input,
+div[data-testid="stFileUploader"] section {
+    border-radius: 16px !important;
+}
+
+div[data-testid="stDataFrame"] {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-soft);
 }
 
 .chip-wrap {
@@ -251,18 +371,16 @@ div[data-testid="metric-container"] label {
     gap: 7px;
     margin-top: 8px;
 }
-
 .mini-chip {
     display: inline-block;
-    background: #eef4ff;
-    color: #1f4b99;
+    background: #eef5ff;
+    color: #1447a6;
     border: 1px solid #d6e4ff;
     border-radius: 999px;
     padding: 6px 10px;
     font-size: 0.82rem;
-    font-weight: 700;
+    font-weight: 800;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -324,16 +442,70 @@ def load_excel(file):
 # ==============================
 # YARDIMCI FONKSİYONLAR
 # ==============================
-def show_metric_card(label, value):
+def show_metric_card(label, value, icon="📌", delta=""):
+    delta_html = f'<div class="metric-delta">{delta}</div>' if delta else ""
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-label">{label}</div>
+            <div class="metric-top">
+                <div class="metric-label">{label}</div>
+                <div class="metric-icon">{icon}</div>
+            </div>
             <div class="metric-value">{value}</div>
+            {delta_html}
         </div>
         """,
         unsafe_allow_html=True
     )
+
+
+def render_ai_card(text, title="AYÇA AI Değerlendirmesi"):
+    st.markdown(
+        f"""
+        <div class="ai-card">
+            <div class="ai-title">🤖 {title}</div>
+            <div class="ai-text">{text}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def render_duty_cards(rows):
+    if rows.empty:
+        return
+    cols = st.columns(min(4, len(rows)))
+    for i, (_, row) in enumerate(rows.iterrows()):
+        with cols[i % len(cols)]:
+            tarih_text = pd.to_datetime(row["Tarih"]).strftime("%d.%m.%Y") if "Tarih" in row else ""
+            gun_text = row.get("Gün", "")
+            st.markdown(
+                f"""
+                <div class="duty-card">
+                    <div class="duty-group">{row.get("Grup", "-")}</div>
+                    <div class="duty-name">{row.get("Eczane", "-")}</div>
+                    <div class="duty-meta">{gun_text} · {tarih_text}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+def style_plotly(fig):
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter, Segoe UI, sans-serif", color="#344054"),
+        margin=dict(l=10, r=10, t=45, b=40),
+        legend_title_text=""
+    )
+    fig.update_xaxes(showgrid=False, zeroline=False)
+    fig.update_yaxes(gridcolor="rgba(102,112,133,0.16)", zeroline=False)
+    return fig
+
+
+def safe_num(series, default=0):
+    return pd.to_numeric(series, errors="coerce").fillna(default)
 
 
 @st.cache_data
@@ -802,21 +974,21 @@ def prepare_ozet_table(df, genel):
     return ozet, gun_sira
 
 def render_header():
-    st.markdown('<div class="main-title">AYÇA | Eczane Nöbet Takip Sistemi</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">AYÇA Nöbet Yönetim Paneli</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="main-subtitle">Nöbet planını yalnızca görüntülemek değil, daha şeffaf ve daha yönetilebilir hale getirmek için tasarlandı.</div>',
+        '<div class="main-subtitle">Eczane nöbet planlarını analiz eden, dengeyi görünür kılan ve karar desteği sunan akıllı panel.</div>',
         unsafe_allow_html=True
     )
 
     st.markdown(
         """
         <div class="hero-box">
-            <div class="hero-badge">Akıllı kontrol paneli</div>
+            <div class="hero-badge">✨ AYÇA V2 · Akıllı nöbet analizi</div>
             <div class="hero-headline">
-                Nöbet planı hazır. <span class="blue">Peki gerçekten</span> <span class="green">adil mi?</span>
+                Nöbet listesi sadece tablo değil; <span class="blue">ölçülebilir</span>, <span class="green">anlaşılır</span> ve yönetilebilir olmalı.
             </div>
             <div class="hero-text">
-                AYÇA ile nöbet dağılımını tarih, grup ve eczane bazında izleyebilir; gün dengesi, dağılım görünümü ve özet tabloları tek ekranda takip edebilirsin.
+                Tarih, grup, eczane, hafta içi / hafta sonu ve bayram dağılımlarını tek panelde izleyerek oda yönetimi için daha şeffaf bir karar zemini oluşturur.
             </div>
         </div>
         """,
@@ -918,19 +1090,18 @@ if menu == "Genel Özet":
     toplam_nobet = len(df)
     toplam_eczane = df["Eczane"].nunique()
     toplam_ay = df["Ay"].nunique()
+    toplam_grup = df["Grup"].nunique()
     ortalama_nobet = round(toplam_nobet / toplam_eczane, 2) if toplam_eczane else 0
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        show_metric_card("Toplam Nöbet", toplam_nobet)
+        show_metric_card("Toplam Nöbet", toplam_nobet, "📅", "Plan genel yükü")
     with c2:
-        show_metric_card("Toplam Eczane", toplam_eczane)
+        show_metric_card("Toplam Eczane", toplam_eczane, "🏥")
     with c3:
-        show_metric_card("Toplam Ay", toplam_ay)
+        show_metric_card("Toplam Ay", toplam_ay, "🗓️")
     with c4:
-        show_metric_card("Ortalama Nöbet", ortalama_nobet)
-
-    st.markdown('<div class="section-title">Gün Dağılımı</div>', unsafe_allow_html=True)
+        show_metric_card("Ortalama Nöbet", ortalama_nobet, "⚖️", f"{toplam_grup} grup izleniyor")
 
     gun_sayim = df["Gün"].value_counts().reset_index()
     gun_sayim.columns = ["Gün", "Sayı"]
@@ -939,28 +1110,53 @@ if menu == "Genel Özet":
     gun_sayim["Gün"] = pd.Categorical(gun_sayim["Gün"], categories=gun_sira, ordered=True)
     gun_sayim = gun_sayim.sort_values("Gün")
 
-    fig = px.pie(
-        gun_sayim,
-        names="Gün",
-        values="Sayı",
-        hole=0.55,
-        color="Gün",
-        color_discrete_sequence=[
-            "#1f4b99", "#2e6bdb", "#4d8af0", "#7bb0ff", "#22a06b", "#49c38a", "#9edcbf"
-        ]
+    en_yogun = gun_sayim.sort_values("Sayı", ascending=False).iloc[0]
+    en_dusuk = gun_sayim.sort_values("Sayı", ascending=True).iloc[0]
+    fark = int(en_yogun["Sayı"] - en_dusuk["Sayı"])
+
+    render_ai_card(
+        f"Gün dağılımında en yoğun gün <b>{en_yogun['Gün']}</b> ({int(en_yogun['Sayı'])} nöbet), "
+        f"en düşük gün <b>{en_dusuk['Gün']}</b> ({int(en_dusuk['Sayı'])} nöbet). "
+        f"Aradaki fark <b>{fark}</b>. Bu değer oda yönetimi için hızlı denge kontrolü sağlar."
     )
-    fig.update_traces(textposition="inside", textinfo="percent+label")
-    fig.update_layout(
-        margin=dict(l=10, r=10, t=10, b=10),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        legend_title_text=""
-    )
-    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown('<div class="section-title">Gün Dağılımı</div>', unsafe_allow_html=True)
+
+    chart_col, insight_col = st.columns([2.2, 1])
+
+    with chart_col:
+        fig = px.pie(
+            gun_sayim,
+            names="Gün",
+            values="Sayı",
+            hole=0.58,
+            color="Gün",
+            color_discrete_sequence=[
+                "#123f8c", "#155eef", "#528bff", "#7ba7ff", "#16a276", "#45c49b", "#9be0c5"
+            ]
+        )
+        fig.update_traces(textposition="inside", textinfo="percent+label", marker=dict(line=dict(color="#ffffff", width=2)))
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", legend_title_text="")
+        st.plotly_chart(fig, use_container_width=True)
+
+    with insight_col:
+        show_metric_card("En Yoğun Gün", f"{en_yogun['Gün']}", "🔥", f"{int(en_yogun['Sayı'])} nöbet")
+        show_metric_card("En Düşük Gün", f"{en_dusuk['Gün']}", "🌿", f"{int(en_dusuk['Sayı'])} nöbet")
+        show_metric_card("Gün Farkı", fark, "📊", "Denge göstergesi")
 
     st.markdown('<div class="section-title">Özet Tablo</div>', unsafe_allow_html=True)
     ozet, _ = prepare_ozet_table(df, genel)
-    st.dataframe(ozet, use_container_width=True, height=500)
+
+    tablo_arama = st.text_input("Tabloda eczane / grup ara", key="genel_ozet_arama")
+    ozet_goster = ozet.copy()
+    if tablo_arama:
+        q = tablo_arama.lower()
+        ozet_goster = ozet_goster[
+            ozet_goster.astype(str).apply(lambda row: row.str.lower().str.contains(q).any(), axis=1)
+        ]
+
+    st.dataframe(ozet_goster, use_container_width=True, height=520)
+
 
 # ==============================
 # TARİH SEÇ
@@ -981,26 +1177,34 @@ elif menu == "Tarih Seç":
 
     secilen_tarih = tarih.to_pydatetime().date() if hasattr(tarih, "to_pydatetime") else tarih
     sonuc = df[df["Tarih"].dt.date == secilen_tarih].copy().sort_values(["Grup", "Eczane"])
+    gun_adi = sonuc["Gün"].iloc[0] if not sonuc.empty else "-"
 
     with col2:
         st.markdown(
             f"""
             <div class="card">
                 <div class="card-title">Seçilen Tarih</div>
-                <div class="card-desc" style="font-size:1.15rem;">
-                    {secilen_tarih.day} {aylar_tr[secilen_tarih.month]} {secilen_tarih.year}
-                </div>
+                <div class="metric-value" style="font-size:2rem;">{secilen_tarih.day} {aylar_tr[secilen_tarih.month]} {secilen_tarih.year}</div>
+                <div class="card-desc">{gun_adi} · Bu tarihte {len(sonuc)} eczane nöbetçi görünüyor.</div>
             </div>
             """,
             unsafe_allow_html=True
         )
+
+    render_ai_card(
+        f"Seçilen günde <b>{len(sonuc)}</b> nöbet kaydı var. Kart görünümü sahada hızlı kontrol, tablo görünümü ise resmi rapor takibi için kullanılabilir.",
+        "Günlük Nöbet Kontrolü"
+    )
 
     st.markdown('<div class="section-title">O gün nöbetçi olan eczaneler</div>', unsafe_allow_html=True)
 
     if sonuc.empty:
         st.warning("Seçilen tarihte kayıt bulunamadı.")
     else:
-        st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Eczane"]], use_container_width=True, height=450)
+        render_duty_cards(sonuc[["Tarih", "Gün", "Grup", "Eczane"]])
+        st.markdown('<div class="section-title">Tablo Görünümü</div>', unsafe_allow_html=True)
+        st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Eczane"]], use_container_width=True, height=330)
+
 
 # ==============================
 # AYLIK TAKVİM
@@ -1038,27 +1242,38 @@ elif menu == "Grup Analizi":
     else:
         grup_listesi = sorted(df["Grup"].dropna().unique())
 
-    st.markdown('<div class="section-title">Grup görünümü</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Grup Analizi</div>', unsafe_allow_html=True)
     grup = st.selectbox("Grup seç", grup_listesi)
 
     ozet, gun_sira = prepare_ozet_table(df, genel)
     grup_ozet = ozet[ozet["Grup"] == grup].copy()
+    sonuc = df[df["Grup"] == grup].copy()
 
-    st.markdown(
-        f"""
-        <div class="card" style="margin-bottom:12px;">
-            <div class="card-title">{grup} grubu eczaneleri</div>
-            <div class="card-desc">Bu alanda ilgili grubun geçmiş ve gün bazlı nöbet dağılımını toplu olarak görebilirsin.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
+    toplam_grup_nobet = len(sonuc)
+    eczane_sayisi = grup_ozet["Eczane"].nunique() if "Eczane" in grup_ozet.columns else sonuc["Eczane"].nunique()
+    toplam_bayram = int(safe_num(grup_ozet["Bayram"]).sum()) if "Bayram" in grup_ozet.columns else 0
+    toplam_katsayi = round(safe_num(grup_ozet["Toplam Katsayı"]).sum(), 2) if "Toplam Katsayı" in grup_ozet.columns else toplam_grup_nobet
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        show_metric_card("Grup", grup, "👥")
+    with c2:
+        show_metric_card("Eczane Sayısı", eczane_sayisi, "🏥")
+    with c3:
+        show_metric_card("Toplam Nöbet", toplam_grup_nobet, "📅")
+    with c4:
+        show_metric_card("Toplam Katsayı", toplam_katsayi, "⚖️", f"Bayram: {toplam_bayram}")
+
+    render_ai_card(
+        f"<b>{grup}</b> grubunda {eczane_sayisi} eczane ve {toplam_grup_nobet} nöbet kaydı bulunuyor. "
+        f"Bu ekran grup içi gün yükünü ve eczane bazlı dağılımı beraber kontrol etmek için düzenlendi.",
+        "Grup Denge Yorumu"
     )
 
-    st.dataframe(grup_ozet, use_container_width=True, height=400)
+    st.markdown('<div class="section-title">Grup Eczaneleri</div>', unsafe_allow_html=True)
+    st.dataframe(grup_ozet, use_container_width=True, height=360)
 
-    st.markdown('<div class="section-title">Grup günlere göre nöbet dağılımı</div>', unsafe_allow_html=True)
-
-    sonuc = df[df["Grup"] == grup].copy()
+    st.markdown('<div class="section-title">Grup Günlere Göre Nöbet Dağılımı</div>', unsafe_allow_html=True)
 
     sayim = (
         sonuc.groupby(["Gün", "Eczane"])
@@ -1080,21 +1295,18 @@ elif menu == "Grup Analizi":
         color="Eczane",
         barmode="group",
         category_orders={"Gün": gun_sira},
-        color_discrete_sequence=px.colors.qualitative.Set2
+        color_discrete_sequence=px.colors.sequential.Blues_r
     )
-    fig.update_layout(
-        margin=dict(l=10, r=10, t=30, b=10),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        legend_title_text=""
-    )
+    fig.update_traces(marker_line_width=0)
+    fig = style_plotly(fig)
     st.plotly_chart(fig, use_container_width=True)
+
 
 # ==============================
 # ECZANE ANALİZİ
 # ==============================
 elif menu == "Eczane Analizi":
-    st.markdown('<div class="section-title">Eczane arama</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Eczane Analizi</div>', unsafe_allow_html=True)
 
     arama = st.text_input("Eczane adı ara")
     eczane_listesi = sorted(df["Eczane"].dropna().unique())
@@ -1108,26 +1320,66 @@ elif menu == "Eczane Analizi":
 
     eczane = st.selectbox("Eczane seç", eczane_listesi)
     sonuc = df[df["Eczane"] == eczane].copy().sort_values("Tarih")
+    ozet, _ = prepare_ozet_table(df, genel)
+    eczane_ozet = ozet[ozet["Eczane"] == eczane].copy()
 
-    c1, c2 = st.columns([1, 2])
+    grup_bilgisi = sonuc["Grup"].iloc[0] if not sonuc.empty else "-"
+    toplam_nobet = len(sonuc)
+    bayram = int(safe_num(eczane_ozet["Bayram"]).sum()) if not eczane_ozet.empty and "Bayram" in eczane_ozet.columns else 0
+    toplam_katsayi = round(safe_num(eczane_ozet["Toplam Katsayı"]).sum(), 2) if not eczane_ozet.empty and "Toplam Katsayı" in eczane_ozet.columns else toplam_nobet
+    hafta_sonu = int(sonuc[sonuc["Gün"].isin(["Ctesi", "Pazar"])].shape[0])
 
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
-        show_metric_card("Toplam Nöbet", len(sonuc))
-
+        show_metric_card("Eczane", eczane, "🏥")
     with c2:
-        grup_bilgisi = sonuc["Grup"].iloc[0] if not sonuc.empty else "-"
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">Grup</div>
-                <div class="metric-value" style="font-size:1.5rem;">{grup_bilgisi}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        show_metric_card("Grup", grup_bilgisi, "👥")
+    with c3:
+        show_metric_card("Toplam Nöbet", toplam_nobet, "📅")
+    with c4:
+        show_metric_card("Katsayı", toplam_katsayi, "⚖️", f"Bayram: {bayram} · Hafta sonu: {hafta_sonu}")
 
-    st.markdown('<div class="section-title">Eczane nöbet geçmişi</div>', unsafe_allow_html=True)
-    st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Ay"]], use_container_width=True, height=450)
+    render_ai_card(
+        f"<b>{eczane}</b> için {toplam_nobet} nöbet kaydı bulunuyor. "
+        f"Hafta sonu nöbet sayısı <b>{hafta_sonu}</b>, bayram kaydı <b>{bayram}</b>. "
+        f"Bu özet, tek eczane bazında adalet kontrolü için hızlı izleme sağlar.",
+        "Eczane Bazlı İçgörü"
+    )
+
+    if not sonuc.empty:
+        timeline_items = ""
+        for _, row in sonuc.iterrows():
+            t = pd.to_datetime(row["Tarih"])
+            timeline_items += f"""
+            <span class="timeline-item">
+                <span class="timeline-dot"></span>
+                {t.day} {aylar_tr[t.month]} · {row["Gün"]}
+            </span>
+            """
+        st.markdown(f'<div class="timeline">{timeline_items}</div>', unsafe_allow_html=True)
+
+    col_chart, col_table = st.columns([1, 1.3])
+
+    with col_chart:
+        st.markdown('<div class="section-title">Gün Dağılımı</div>', unsafe_allow_html=True)
+        gun_df = sonuc["Gün"].value_counts().reset_index()
+        gun_df.columns = ["Gün", "Sayı"]
+        if not gun_df.empty:
+            fig = px.pie(
+                gun_df,
+                names="Gün",
+                values="Sayı",
+                hole=0.55,
+                color_discrete_sequence=["#155eef", "#528bff", "#16b8a6", "#98dcca", "#0f3f9e", "#7ba7ff", "#45c49b"]
+            )
+            fig.update_traces(textposition="inside", textinfo="label+value")
+            fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), paper_bgcolor="rgba(0,0,0,0)", legend_title_text="")
+            st.plotly_chart(fig, use_container_width=True)
+
+    with col_table:
+        st.markdown('<div class="section-title">Eczane Nöbet Geçmişi</div>', unsafe_allow_html=True)
+        st.dataframe(sonuc[["Tarih", "Gün", "Grup", "Ay"]], use_container_width=True, height=420)
+
 
 # ==============================
 # GENEL HAFTA İÇİ / HAFTA SONU
